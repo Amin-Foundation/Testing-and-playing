@@ -104,6 +104,15 @@
   }
   .lede { font-size: 16.5px; color: var(--ink-2); max-width: 68ch; margin: 0; }
   .lede b { color: var(--ink); font-weight: 600; }
+  .opmodel {
+    margin: 18px 0 0; padding: 15px 18px; background: var(--surface-2); border: 1px solid var(--hair);
+    border-left: 3px solid var(--service); border-radius: 10px; font-size: 13.5px; color: var(--ink-2); max-width: 82ch;
+  }
+  .opmodel b { color: var(--ink); font-weight: 600; }
+  .ompill {
+    display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    font-weight: 600; color: var(--service); margin-right: 8px;
+  }
 
   /* ============================================================= LAYOUT */
   .grid { display: grid; grid-template-columns: 340px 1fr; gap: 22px; align-items: start; margin-top: 26px; }
@@ -284,6 +293,14 @@
       a <b>service</b> share to registered Orchestrators, and a <b>burn</b> residual. The service share
       <b>w1</b> only steps up when quarterly on-chain deal volume clears a rising target. Set a scenario below to
       see the streams, the volume gate, and the resulting rewards.</p>
+    <div class="opmodel">
+      <span class="ompill">Operating model</span>
+      Rewards are <b>set by mechanism, not discretion</b>. The <b>Stream-Split Controller</b> (Allocation
+      Governance) owns the weights — the w0 ramp, w1, and the gate. The <b>Service Rewards Actor</b>
+      (Registry Governance, a 2-of-2 of FF + FilOZ) only decides <b>who is registered</b> and <b>how w1 is
+      divided</b> among Orchestrators; it cannot change the weights, skip the hold, or hand-pick payouts. f02
+      pays each Orchestrator directly every epoch — no one signs the routine flow.
+    </div>
   </header>
 
   <div class="grid">
@@ -294,13 +311,14 @@
       <div class="cgroup">
         <h3>Network</h3>
         <div class="field">
-          <label>FIL price <span class="val" id="v_price">$4.00</span></label>
-          <input type="range" id="price" min="0.5" max="30" step="0.5" value="4">
+          <label>FIL price <span class="val" id="v_price">$1.00</span></label>
+          <input type="range" id="price" min="0.5" max="30" step="0.5" value="1">
+          <p class="hint">Only scales the USD value of FIL rewards. The FIP calibrates the gate targets at FIL = $1.</p>
         </div>
         <div class="field">
-          <label>Block reward, network total <span class="val" id="v_br">67,000 FIL/d</span></label>
-          <input type="range" id="br" min="10000" max="120000" step="1000" value="67000">
-          <p class="hint">Total daily block reward minted across the network. ≈67,000 FIL/day today (FIP baseline).</p>
+          <label>Block reward, network total <span class="val" id="v_br">50,000 FIL/d</span></label>
+          <input type="range" id="br" min="10000" max="120000" step="1000" value="50000">
+          <p class="hint">Total daily block reward minted network-wide. 50,000 FIL/day is the FIP worked-example placeholder — verify against chain actuals.</p>
         </div>
       </div>
 
@@ -321,6 +339,8 @@
             <button type="button" data-mode="storage" aria-pressed="true">Storage capacity</button>
             <button type="button" data-mode="direct" aria-pressed="false">Direct FPV</button>
           </div>
+          <button class="btn-ghost" id="exbtn" type="button" style="margin-top:11px;width:100%;">↺ Load FIP worked example</button>
+          <p class="hint" id="examplenote" style="display:none;">Loaded the deck's Fil One deal book (FPV $1.8K → $5.8K → $11.2K → $17.0K, then flat) at 50,000 FIL/day, FIL = $1. Pick a volume mode above to exit.</p>
         </div>
 
         <div id="storagefields">
@@ -335,9 +355,9 @@
             </div>
           </div>
           <div class="field">
-            <label>Service revenue rate <span class="val" id="v_rate">$2.00 /TiB/mo</span></label>
-            <input type="range" id="rate" min="0.1" max="50" step="0.1" value="2">
-            <p class="hint">On-chain deal revenue settled through Filecoin Pay, per TiB of paid storage per month.</p>
+            <label>Service revenue rate <span class="val" id="v_rate">$5.00 /TiB/mo</span></label>
+            <input type="range" id="rate" min="0.1" max="50" step="0.1" value="5">
+            <p class="hint">On-chain deal revenue settled through Filecoin Pay, per TiB of paid storage per month. Anchor: Fil One list price ≈ $4.99/TB/mo (Jul 2026).</p>
           </div>
         </div>
 
@@ -350,8 +370,8 @@
         </div>
 
         <div class="field">
-          <label>Volume growth <span class="val" id="v_growth">+40% / quarter</span></label>
-          <input type="range" id="growth" min="0" max="150" step="5" value="40">
+          <label>Volume growth <span class="val" id="v_growth">+45% / quarter</span></label>
+          <input type="range" id="growth" min="0" max="150" step="5" value="45">
           <p class="hint">How fast quarterly volume compounds. Gate targets escalate ~2.7× per step.</p>
         </div>
       </div>
@@ -414,11 +434,11 @@
           an escalating USD target. Targets: $3.5K → $9.4K → $25.5K → … → $3.66M across the eight steps.</p>
         <div class="gaterow">
           <div class="gstat">
-            <p class="gl">Volume this scenario</p>
+            <p class="gl">Prior-quarter volume (FPV)</p>
             <div class="gv" id="g_measured">$0</div>
           </div>
           <div class="gstat">
-            <p class="gl">Target to step up</p>
+            <p class="gl">Target required</p>
             <div class="gv" id="g_target">$0</div>
           </div>
           <div id="g_pill" class="pill na"><span class="dot"></span>—</div>
@@ -476,23 +496,32 @@
             final governance-set numbers as they land.</p>
 
           <h4>Consensus ceiling (α)</h4>
-          <p>A deterministic, ungated linear ramp — the maximum fraction available to service:</p>
-          <div class="eq">α(Q) = min(0.50, 0.05 + 0.05·Q)   →   consensus w0 = 1 − α</div>
-          <p>5% at launch, +5pp per quarter, reaching the 50% cap at Q9.</p>
+          <p>A deterministic, ungated linear ramp — the maximum fraction available to service. Because the ramp is
+            continuous, the reward earned over a quarter uses the ceiling <b>averaged across that quarter</b>:</p>
+          <div class="eq">α_avg(Q) = min(0.50, 0.025 + 0.05·Q)   →   consensus w0 = 1 − α_avg
+Q1 7.5% · Q2 12.5% · Q3 17.5% · Q4 22.5% … reaching the 50% cap around Q10</div>
 
           <h4>Service weight (w1) &amp; burn</h4>
           <ul>
-            <li>Q1 is the <b>bootstrap</b>: w1 tracks the ceiling (w1 = α), nothing burns.</li>
-            <li>End of Q1: w1 is set to <code>W1_INITIAL = 10%</code>.</li>
-            <li>Q2 onward: <code>QuarterlyGateCheck</code> raises w1 by <code>W1_STEP = 5pp</code> if the gate passes, capped at the ceiling α.</li>
-            <li>Burn residual: <code>w_b = α − w1</code>.</li>
+            <li>Q1 is the <b>ungated bootstrap</b>: w1 tracks the ceiling (earns ~7.5% avg), nothing burns.</li>
+            <li>Entering Q2, w1 resolves to <code>W1_INITIAL = 10%</code>.</li>
+            <li>Q2 onward: <code>QuarterlyGateCheck</code> reads the just-ended quarter's FPV; a pass raises w1 by
+              <code>W1_STEP = 5pp</code>, capped by the ramp at quarter end.</li>
+            <li>Burn residual: <code>w_b = α_avg − w1</code> — a missed gate's cost shows up the <i>following</i> quarter,
+              as the ceiling ramps on while w1 stays put.</li>
           </ul>
 
           <h4>The volume gate</h4>
           <div class="eq">AggregatedFPV(Q−1) ≥ ComputeTarget(w1)
 ComputeTarget(w1) = 3,500 · 2.7^steps,  steps = (w1 − 10%) / 5%,  clamped 0–7</div>
-          <p>Frozen USD schedule: $3.5K, $9.4K, $25.5K, $68.9K, $186K, $502K, $1.36M, $3.66M for the eight steps
-            (10→15% … 45→50%). Calibrated to current Filecoin Pay actuals at FIL = $1.</p>
+          <p>Frozen USD schedule: $3.5K, $9.45K, $25.5K, $68.9K, $186K, $502K, $1.36M, $3.66M for the eight steps
+            (10→15% … 45→50%). Targets multiply ~2.7× per step; calibrated to Filecoin Pay actuals at FIL = $1.</p>
+
+          <h4>Reconciliation with the FIP worked example</h4>
+          <p>At <b>50,000 FIL/day</b> and <b>FIL = $1</b>, a sole Phase-1 Orchestrator earns
+            <b>~342K / 456K / 684K / 912K FIL</b> across Q1–Q4, with ~114K FIL burned per gated quarter — matching the
+            "Year of Orchestrator Selling Fil One Storage" worked example in the Solstice Decisions deck. Set the block
+            reward to 50,000 and FIL price to $1 to reproduce it.</p>
 
           <h4>Filecoin Pay Volume from storage</h4>
           <div class="eq">FPV(Q) = rate ($/TiB/mo) · capacity (TiB) · 3 months · (1 + growth)^(Q−1)</div>
@@ -504,12 +533,24 @@ ComputeTarget(w1) = 3,500 · 2.7^steps,  steps = (w1 − 10%) / 5%,  clamped 0�
           <div class="eq">service stream = w1 · block_reward_per_day
 this actor    = (actor's FPV share) · service stream</div>
           <p>In Phase 1 the single Orchestrator's share is 100%. In Phase 2, w1 is divided among Orchestrators in
-            proportion to their FPV.</p>
+            proportion to their FPV (the SRA's <code>SplitRule</code>, written via <code>SetShares</code>). A failed
+            per-Orchestrator send burns that share — it is never held or clawed back — and the registry is bounded by
+            <code>MAX_RECIPIENTS</code>.</p>
+
+          <h4>Who controls what</h4>
+          <p>Two governance bodies, one per contract, each two independent org multisigs that both approve and either
+            can cancel. <b>Allocation Governance</b> over the <b>Stream-Split Controller (SWA)</b> sets the weights and
+            gate (per-change FIP + 7-day hold). <b>Registry Governance</b> over the <b>SRA</b> (FF + FilOZ, 2-of-2) runs
+            admissions, disputes, freezes, and volume corrections under <code>REGISTRY_CANCEL_HOLD</code> — no per-change
+            FIP. The quarterly gate step and <code>SetShares</code> recompute run permissionlessly; no one signs them.</p>
 
           <p class="disclaimer">Illustrative model for community insight, not financial advice or a governance
-            commitment. Block reward is held constant for clarity (real issuance declines over time). Gate parameters,
-            β/target schedule, ramp length, and phase timing are subject to the final FIP and governance. This tool
-            reads only public protocol parameters — no wallets, keys, or funds are involved.</p>
+            commitment. Sources: Solstice FIP draft (reward mechanism &amp; SWA/SRA spec), Solstice Governance Operations
+            draft, SRA Multisig Composition memo (v3), and the Solstice Decisions &amp; User Stories deck (worked example).
+            Block reward is held constant for clarity (real issuance declines over time); emission (50,000 FIL/day) is a
+            placeholder to verify against chain actuals. Gate parameters, target schedule, ramp length, and phase timing
+            are subject to the final FIP and governance. This tool reads only public protocol parameters — no wallets,
+            keys, or funds are involved.</p>
         </div>
       </details>
 
@@ -534,7 +575,11 @@ this actor    = (actor's FPV share) · service stream</div>
 
   // ---- helpers ----
   const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
-  function alphaCeil(q){ return Math.min(ALPHA_CAP, ALPHA_START + ALPHA_STEP * q); } // end of quarter q
+  // Consensus ceiling (alpha) is a continuous ramp. The reward earned over a quarter
+  // uses the AVERAGE ceiling across that quarter; the w1 step is capped by the ramp
+  // value at the quarter end. Matches the FIP worked example (7.5/12.5/17.5/22.5%).
+  function avgCeil(q){ return Math.min(ALPHA_CAP, 0.025 + ALPHA_STEP * q); } // mean over quarter q
+  function endCeil(q){ return Math.min(ALPHA_CAP, ALPHA_START + ALPHA_STEP * q); } // end of quarter q
   function computeTarget(w1){
     let steps = Math.round((w1 - W1_INITIAL) / W1_STEP);
     steps = clamp(steps, 0, N_GATES - 1);
@@ -551,6 +596,8 @@ this actor    = (actor's FPV share) · service stream</div>
     if (v >= 1e3) return "$" + Math.round(v).toLocaleString();
     return "$" + v.toFixed(0);
   }
+  function pctNum(x){ const r = Math.round(x * 1000) / 10; return Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1); }
+  function fmtPct(x){ return pctNum(x) + "%"; }
   function fmtFIL(v){
     if (v >= 1e6) return (v/1e6).toFixed(2) + "M";
     if (v >= 1000) return Math.round(v).toLocaleString();
@@ -577,34 +624,45 @@ this actor    = (actor's FPV share) · service stream</div>
     }
     return { price, brDay, qShown, growth, share, fpvBase };
   }
-  function fpvAt(q, inp){ return inp.fpvBase * Math.pow(1 + inp.growth, q - 1); }
+  // Published Fil One deal-book FPV from the Solstice Decisions deck (USD/quarter), flat after Q4.
+  const EX_FPV = [1800, 5800, 11200, 17000];
+  function fpvAt(q, inp){
+    if (state.revmode === "example") return EX_FPV[clamp(q, 1, EX_FPV.length) - 1];
+    return inp.fpvBase * Math.pow(1 + inp.growth, q - 1);
+  }
 
   // ---- simulate the whole timeline ----
   function simulate(inp){
     const rows = [];
-    let w1 = W1_INITIAL;                             // value entering the current quarter
+    let w1carry = W1_INITIAL;                          // w1 held entering a gated quarter
     for (let q = 1; q <= NQ; q++){
-      const alpha = alphaCeil(q);
-      let gate = null, target = null, measuredPrev = null;
+      const avgC = avgCeil(q), endC = endCeil(q);
+      let earnW1, gate = null, target = null, measuredPrev = null;
       if (q === 1){
-        w1 = W1_INITIAL;                             // bootstrap resolves to 10%
+        // Bootstrap quarter: w1 tracks the ceiling (no burn); resolves to 10% for Q2.
+        earnW1 = avgC;
+        w1carry = W1_INITIAL;
       } else {
-        target = computeTarget(w1);
+        // Gate from Q2 onward reads the just-ended quarter's FPV against the target
+        // for the current w1; a pass steps w1 by 5pp, capped by the ramp at quarter end.
+        target = computeTarget(w1carry);
         measuredPrev = fpvAt(q - 1, inp);
         gate = measuredPrev >= target;
-        if (gate) w1 = Math.min(w1 + W1_STEP, alpha);
+        if (gate) w1carry = Math.min(w1carry + W1_STEP, endC, W1_CAP);
+        earnW1 = Math.min(w1carry, endC);
       }
-      const w1c = Math.min(w1, alpha);
-      const w0 = 1 - alpha;
-      const burn = Math.max(0, alpha - w1c);
-      const svcFil = w1c * inp.brDay;
+      const w1 = earnW1;
+      const w0 = 1 - avgC;
+      const burn = Math.max(0, avgC - w1);
+      const svcFil = w1 * inp.brDay;
       const actorFil = svcFil * inp.share;
       const burnFil = burn * inp.brDay;
       rows.push({
-        q, alpha, w0, w1: w1c, burn,
+        q, alpha: avgC, w0, w1, burn,
         gate, target, measuredPrev,
         fpvThis: fpvAt(q, inp),
         svcFil, actorFil, burnFil,
+        svcFilQtr: svcFil * 90,
         actorUsdYr: actorFil * DAYS_PER_YEAR * inp.price
       });
     }
@@ -656,9 +714,9 @@ this actor    = (actor's FPV share) · service stream</div>
     });
     attachHover(svg, "tt_w", rows, n, (r)=>{
       return `<div class="tt-h">Q${r.q}</div>`
-        + row("var(--consensus)","Consensus", (r.w0*100).toFixed(0)+"%")
-        + row("var(--service)","Service", (r.w1*100).toFixed(0)+"%")
-        + row("var(--burn)","Burn", (r.burn*100).toFixed(0)+"%");
+        + row("var(--consensus)","Consensus", fmtPct(r.w0))
+        + row("var(--service)","Service", fmtPct(r.w1))
+        + row("var(--burn)","Burn", fmtPct(r.burn));
     });
     function row(c,k,v){ return `<div class="tt-r"><span class="k"><span class="sw" style="background:${c}"></span>${k}</span><span class="v">${v}</span></div>`; }
   }
@@ -691,7 +749,7 @@ this actor    = (actor's FPV share) · service stream</div>
       return `<div class="tt-h">Q${r.q}</div>`
         + `<div class="tt-r"><span class="k"><span class="sw" style="background:var(--service)"></span>FIL/day</span><span class="v">${fmtFIL(r.actorFil)}</span></div>`
         + `<div class="tt-r"><span class="k">USD/yr</span><span class="v">${fmtUSD(r.actorUsdYr)}</span></div>`
-        + `<div class="tt-r"><span class="k">w1</span><span class="v">${(r.w1*100).toFixed(0)}%</span></div>`;
+        + `<div class="tt-r"><span class="k">w1</span><span class="v">${fmtPct(r.w1)}</span></div>`;
     });
   }
 
@@ -729,7 +787,7 @@ this actor    = (actor's FPV share) · service stream</div>
     let h = `<table class="data"><thead><tr><th>Q</th><th>Ceiling α</th><th>Consensus w0</th><th>Service w1</th><th>Burn w_b</th><th>Gate</th></tr></thead><tbody>`;
     rows.forEach(r=>{
       const chip = r.gate === null ? `<span class="chip na">boot</span>` : (r.gate ? `<span class="chip pass">pass</span>` : `<span class="chip fail">fail</span>`);
-      h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${(r.alpha*100).toFixed(0)}%</td><td>${(r.w0*100).toFixed(0)}%</td><td>${(r.w1*100).toFixed(0)}%</td><td>${(r.burn*100).toFixed(0)}%</td><td>${chip}</td></tr>`;
+      h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${fmtPct(r.alpha)}</td><td>${fmtPct(r.w0)}</td><td>${fmtPct(r.w1)}</td><td>${fmtPct(r.burn)}</td><td>${chip}</td></tr>`;
     });
     return h + `</tbody></table>`;
   }
@@ -755,14 +813,14 @@ this actor    = (actor's FPV share) · service stream</div>
       d.className = "splitseg" + (s.w < 0.06 ? " tiny" : "");
       d.style.flexBasis = (s.w*100) + "%";
       d.style.background = s.c;
-      d.innerHTML = `<span class="pct">${(s.w*100).toFixed(0)}%</span>`;
+      d.innerHTML = `<span class="pct">${fmtPct(s.w)}</span>`;
       bar.appendChild(d);
     });
     const lg = $("splitlegend"); lg.innerHTML = "";
     segs.forEach(s=>{
       const li = document.createElement("div");
       li.className = "li";
-      li.innerHTML = `<span class="sw" style="background:${s.c}"></span><span><span class="nm">${s.nm}</span> <span class="vv">${(s.w*100).toFixed(0)}% · ${fmtFIL(s.fil)} FIL/d</span><small>${s.sub}</small></span>`;
+      li.innerHTML = `<span class="sw" style="background:${s.c}"></span><span><span class="nm">${s.nm}</span> <span class="vv">${fmtPct(s.w)} · ${fmtFIL(s.fil)} FIL/d</span><small>${s.sub}</small></span>`;
       lg.appendChild(li);
     });
   }
@@ -785,7 +843,7 @@ this actor    = (actor's FPV share) · service stream</div>
     const pass = cur.gate;
     const p = $("g_pill");
     p.className = "pill " + (pass ? "pass" : "fail");
-    p.innerHTML = `<span class="dot"></span>${pass ? "GATE PASSES · w1 +5pp" : "GATE FAILS · w1 holds"}`;
+    p.innerHTML = `<span class="dot"></span>${pass ? "GATE PASSED · w1 stepped +5pp" : "GATE FAILED · w1 held"}`;
     const scaleMax = Math.max(cur.measuredPrev, cur.target) * 1.15;
     $("g_fill").style.width = clamp(cur.measuredPrev / scaleMax * 100, 0, 100) + "%";
     $("g_fill").style.background = pass ? "var(--good)" : "var(--burn)";
@@ -815,14 +873,14 @@ this actor    = (actor's FPV share) · service stream</div>
     $("split_q").textContent = "Q" + cur.q;
 
     // KPIs
-    $("k_w1").innerHTML = (cur.w1*100).toFixed(0) + '<span class="kunit">%</span>';
-    $("k_w1sub").textContent = "ceiling α = " + (cur.alpha*100).toFixed(0) + "%";
+    $("k_w1").innerHTML = pctNum(cur.w1) + '<span class="kunit">%</span>';
+    $("k_w1sub").textContent = "avg ceiling α = " + (cur.alpha*100).toFixed(1) + "%";
     $("k_svc").innerHTML = fmtFIL(cur.svcFil) + '<span class="kunit">FIL/d</span>';
     $("k_svcsub").textContent = "≈ " + fmtUSD(cur.svcFil*DAYS_PER_YEAR*inp.price) + " / yr";
     $("k_actor").innerHTML = fmtFIL(cur.actorFil) + '<span class="kunit">FIL/d</span>';
     $("k_actorsub").textContent = "≈ " + fmtUSD(cur.actorUsdYr) + " / yr · " + (inp.share*100).toFixed(0) + "% share";
     $("k_burn").innerHTML = fmtFIL(cur.burnFil) + '<span class="kunit">FIL/d</span>';
-    $("k_burnsub").textContent = (cur.burn*100).toFixed(0) + "% of reward · " + fmtUSD(cur.burnFil*DAYS_PER_YEAR*inp.price) + "/yr";
+    $("k_burnsub").textContent = fmtPct(cur.burn) + " of reward · " + fmtUSD(cur.burnFil*DAYS_PER_YEAR*inp.price) + "/yr";
 
     drawSplit(cur, inp);
     drawGate(cur);
@@ -843,6 +901,17 @@ this actor    = (actor's FPV share) · service stream</div>
     [...$("revmode").children].forEach(x => x.setAttribute("aria-pressed", x === b));
     $("storagefields").classList.toggle("hidden", state.revmode !== "storage");
     $("directfields").classList.toggle("hidden", state.revmode !== "direct");
+    $("examplenote").style.display = "none";
+    render();
+  });
+  // FIP worked-example preset
+  $("exbtn").addEventListener("click", () => {
+    state.revmode = "example";
+    [...$("revmode").children].forEach(x => x.setAttribute("aria-pressed", false));
+    $("storagefields").classList.add("hidden");
+    $("directfields").classList.add("hidden");
+    $("examplenote").style.display = "";
+    $("br").value = 50000; $("price").value = 1; $("share").value = 100;
     render();
   });
   // capacity unit toggle
