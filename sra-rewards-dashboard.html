@@ -1,0 +1,876 @@
+<title>SRA Rewards Calculator</title>
+<style>
+  /* ============================================================= TOKENS */
+  :root {
+    color-scheme: light dark;
+
+    --ground:      #f5f7fa;
+    --surface:     #ffffff;
+    --surface-2:   #f0f3f7;
+    --ink:         #0c1116;
+    --ink-2:       #4c5663;
+    --ink-muted:   #7b8695;
+    --hair:        #e2e7ee;
+    --hair-strong: #cfd6e0;
+
+    --service:     #2a78d6;   /* w1  */
+    --service-soft:#dbe9fb;
+    --consensus:   #8792a3;   /* w0  */
+    --consensus-soft:#e7eaef;
+    --burn:        #eb6834;   /* w_b */
+    --burn-soft:   #fbe2d6;
+
+    --good:        #0ca30c;
+    --good-ink:    #067306;
+    --good-soft:   #dcf3dc;
+    --bad:         #d03b3b;
+    --bad-ink:     #b32626;
+    --bad-soft:    #f8dede;
+
+    --grid:        #eaeef4;
+    --axis:        #cfd6e0;
+
+    --shadow: 0 1px 2px rgba(12,17,22,.05), 0 4px 16px rgba(12,17,22,.04);
+
+    --sans: "Söhne", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
+
+    --maxw: 1180px;
+    --r: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:      #0c0e12;
+      --surface:     #16191f;
+      --surface-2:   #1d2129;
+      --ink:         #eef1f5;
+      --ink-2:       #a4aebb;
+      --ink-muted:   #7b8695;
+      --hair:        #262b34;
+      --hair-strong: #333a45;
+
+      --service:     #3987e5;
+      --service-soft:#12233a;
+      --consensus:   #6b7686;
+      --consensus-soft:#242a33;
+      --burn:        #d95926;
+      --burn-soft:   #331a10;
+
+      --good:        #22b422;
+      --good-ink:    #4bd14b;
+      --good-soft:   #10240f;
+      --bad:         #e05656;
+      --bad-ink:     #ef7676;
+      --bad-soft:    #2c1414;
+
+      --grid:        #21262e;
+      --axis:        #333a45;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 22px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground:#f5f7fa;--surface:#fff;--surface-2:#f0f3f7;--ink:#0c1116;--ink-2:#4c5663;--ink-muted:#7b8695;
+    --hair:#e2e7ee;--hair-strong:#cfd6e0;--service:#2a78d6;--service-soft:#dbe9fb;--consensus:#8792a3;
+    --consensus-soft:#e7eaef;--burn:#eb6834;--burn-soft:#fbe2d6;--good:#0ca30c;--good-ink:#067306;--good-soft:#dcf3dc;
+    --bad:#d03b3b;--bad-ink:#b32626;--bad-soft:#f8dede;--grid:#eaeef4;--axis:#cfd6e0;
+    --shadow:0 1px 2px rgba(12,17,22,.05),0 4px 16px rgba(12,17,22,.04);
+  }
+  :root[data-theme="dark"] {
+    --ground:#0c0e12;--surface:#16191f;--surface-2:#1d2129;--ink:#eef1f5;--ink-2:#a4aebb;--ink-muted:#7b8695;
+    --hair:#262b34;--hair-strong:#333a45;--service:#3987e5;--service-soft:#12233a;--consensus:#6b7686;
+    --consensus-soft:#242a33;--burn:#d95926;--burn-soft:#331a10;--good:#22b422;--good-ink:#4bd14b;--good-soft:#10240f;
+    --bad:#e05656;--bad-ink:#ef7676;--bad-soft:#2c1414;--grid:#21262e;--axis:#333a45;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 22px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--sans); line-height: 1.5;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 32px 22px 72px; }
+
+  /* ============================================================= HEADER */
+  header { margin-bottom: 26px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--service); font-weight: 600; margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(26px, 4vw, 40px); line-height: 1.08; letter-spacing: -.02em;
+    font-weight: 680; margin: 0 0 12px; text-wrap: balance;
+  }
+  .lede { font-size: 16.5px; color: var(--ink-2); max-width: 68ch; margin: 0; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  /* ============================================================= LAYOUT */
+  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 22px; align-items: start; margin-top: 26px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r);
+    box-shadow: var(--shadow);
+  }
+  .controls { position: sticky; top: 18px; padding: 6px 20px 20px; }
+  @media (max-width: 900px) { .controls { position: static; } }
+
+  .readout { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+  /* ============================================================= CONTROLS */
+  .cgroup { padding: 18px 0; border-bottom: 1px solid var(--hair); }
+  .cgroup:last-child { border-bottom: 0; padding-bottom: 2px; }
+  .cgroup > h3 {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--ink-muted); font-weight: 600; margin: 0 0 15px; display: flex; align-items: center; gap: 8px;
+  }
+  .cgroup > h3::before { content:""; width: 6px; height: 6px; border-radius: 2px; background: var(--service); }
+
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field > label {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    font-size: 13px; color: var(--ink-2); margin-bottom: 7px; font-weight: 500;
+  }
+  .field .val {
+    font-family: var(--mono); font-size: 13px; color: var(--ink); font-weight: 600;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--hair); }
+  input[type=range]::-moz-range-track { height: 5px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--hair); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -7px;
+    border-radius: 50%; background: var(--service); border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--service);
+  }
+  input[type=range]::-moz-range-thumb { width: 15px; height: 15px; border-radius: 50%; background: var(--service); border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--service); }
+  input[type=range]:focus-visible { outline: 2px solid var(--service); outline-offset: 3px; border-radius: 4px; }
+
+  .row2 { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+  input[type=number], select {
+    font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums;
+    padding: 8px 10px; border: 1px solid var(--hair-strong); border-radius: 8px;
+    background: var(--surface); color: var(--ink); width: 100%; -moz-appearance: textfield;
+  }
+  input[type=number]:focus, select:focus { outline: 2px solid var(--service); outline-offset: 1px; border-color: var(--service); }
+
+  .seg { display: inline-flex; border: 1px solid var(--hair-strong); border-radius: 8px; overflow: hidden; }
+  .seg button {
+    font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 7px 12px;
+    background: var(--surface); color: var(--ink-2); border: 0; cursor: pointer; border-right: 1px solid var(--hair-strong);
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--service); color: #fff; }
+  .hint { font-size: 11.5px; color: var(--ink-muted); margin: 7px 0 0; line-height: 1.4; }
+
+  /* ============================================================= KPI ROW */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 720px) { .kpis { grid-template-columns: repeat(2,1fr); } }
+  .kpi { background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r); padding: 16px 16px 15px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .kpi::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--kc, var(--service)); }
+  .kpi .klabel { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; margin: 0 0 8px; }
+  .kpi .kval { font-size: 27px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .kpi .kunit { font-size: 13px; color: var(--ink-2); font-weight: 500; margin-left: 3px; letter-spacing: 0; }
+  .kpi .ksub { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+
+  /* ============================================================= CARD */
+  .card { background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r); box-shadow: var(--shadow); padding: 20px 22px 22px; }
+  .card > .chead { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; margin-bottom: 4px; flex-wrap: wrap; }
+  .card h2 { font-size: 16px; font-weight: 640; letter-spacing: -.01em; margin: 0; }
+  .card .csub { font-size: 13px; color: var(--ink-2); margin: 6px 0 18px; max-width: 70ch; }
+
+  /* ============================================================= SPLIT BAR */
+  .splitbar { display: flex; width: 100%; height: 60px; border-radius: 10px; overflow: hidden; border: 1px solid var(--hair); background: var(--surface-2); }
+  .splitseg { display: flex; align-items: center; justify-content: center; position: relative; min-width: 2px; transition: flex-basis .35s cubic-bezier(.4,0,.2,1); border-right: 2px solid var(--surface); }
+  .splitseg:last-child { border-right: 0; }
+  .splitseg .pct { font-family: var(--mono); font-weight: 680; font-size: 15px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.28); font-variant-numeric: tabular-nums; }
+  .splitseg.tiny .pct { display: none; }
+  .slegend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
+  .slegend .li { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+  .slegend .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  .slegend .nm { font-weight: 600; }
+  .slegend .vv { font-family: var(--mono); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .slegend .li small { display:block; color: var(--ink-muted); font-size: 11px; }
+
+  /* ============================================================= GATE */
+  .gaterow { display: grid; grid-template-columns: 1fr 1fr auto; gap: 18px; align-items: center; }
+  @media (max-width: 620px) { .gaterow { grid-template-columns: 1fr 1fr; } }
+  .gstat { }
+  .gstat .gl { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; margin: 0 0 6px; }
+  .gstat .gv { font-size: 22px; font-weight: 680; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .gstat .gv small { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-weight: 680; font-size: 13px; padding: 9px 15px; border-radius: 999px; letter-spacing: .02em; }
+  .pill.pass { background: var(--good-soft); color: var(--good-ink); }
+  .pill.fail { background: var(--bad-soft); color: var(--bad-ink); }
+  .pill.na   { background: var(--surface-2); color: var(--ink-muted); }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .gatemeter { margin-top: 20px; }
+  .gatemeter .track { position: relative; height: 10px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--hair); overflow: hidden; }
+  .gatemeter .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; transition: width .35s ease, background .3s; }
+  .gatemeter .tgt { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+  .gatemeter .glabels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--ink-muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
+
+  /* ============================================================= CHARTS */
+  .chartwrap { position: relative; width: 100%; overflow-x: auto; }
+  svg.chart { display: block; width: 100%; height: auto; }
+  .chart text { font-family: var(--mono); fill: var(--ink-muted); }
+  .axislbl { font-size: 11px; }
+  .ttip {
+    position: absolute; pointer-events: none; z-index: 5; background: var(--surface);
+    border: 1px solid var(--hair-strong); border-radius: 9px; box-shadow: var(--shadow);
+    padding: 10px 12px; font-size: 12px; min-width: 140px; opacity: 0; transition: opacity .12s; transform: translate(-50%, -108%);
+  }
+  .ttip .tt-h { font-family: var(--mono); font-weight: 680; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 7px; }
+  .ttip .tt-r { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin: 3px 0; }
+  .ttip .tt-r .k { display: flex; align-items: center; gap: 7px; color: var(--ink-2); }
+  .ttip .tt-r .k .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .ttip .tt-r .v { font-family: var(--mono); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .chartlegend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 4px; }
+  .chartlegend .li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .chartlegend .sw { width: 11px; height: 11px; border-radius: 3px; }
+  .chartlegend .ln { width: 16px; height: 3px; border-radius: 2px; }
+
+  /* ============================================================= TABLE */
+  .tabtoggle { margin-left: auto; }
+  .btn-ghost {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: .04em;
+    padding: 6px 12px; border-radius: 7px; border: 1px solid var(--hair-strong); background: var(--surface);
+    color: var(--ink-2); cursor: pointer;
+  }
+  .btn-ghost:hover { border-color: var(--service); color: var(--service); }
+  table.data { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  table.data th, table.data td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--hair); font-family: var(--mono); white-space: nowrap; }
+  table.data th { color: var(--ink-muted); font-weight: 600; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; }
+  table.data td:first-child, table.data th:first-child { text-align: left; }
+  table.data tr.sel td { background: var(--service-soft); }
+  table.data td .chip { font-size: 10.5px; padding: 2px 7px; border-radius: 5px; font-weight: 680; }
+  .chip.pass { background: var(--good-soft); color: var(--good-ink); }
+  .chip.fail { background: var(--bad-soft); color: var(--bad-ink); }
+  .chip.na { color: var(--ink-muted); }
+  .hidden { display: none !important; }
+
+  /* ============================================================= FOOTNOTE */
+  details.method { margin-top: 8px; background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r); box-shadow: var(--shadow); }
+  details.method > summary { cursor: pointer; padding: 16px 22px; font-weight: 640; font-size: 15px; list-style: none; display: flex; align-items: center; gap: 10px; }
+  details.method > summary::-webkit-details-marker { display: none; }
+  details.method > summary::before { content: "＋"; font-family: var(--mono); color: var(--service); font-weight: 700; }
+  details.method[open] > summary::before { content: "－"; }
+  .mbody { padding: 0 22px 22px; color: var(--ink-2); font-size: 13.5px; }
+  .mbody h4 { color: var(--ink); font-size: 13px; margin: 20px 0 8px; font-family: var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+  .mbody code { font-family: var(--mono); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; color: var(--ink); }
+  .mbody .eq { font-family: var(--mono); background: var(--surface-2); border: 1px solid var(--hair); border-radius: 8px; padding: 12px 14px; font-size: 12.5px; overflow-x: auto; margin: 8px 0; color: var(--ink); }
+  .mbody ul { padding-left: 20px; }
+  .mbody li { margin: 5px 0; }
+  .disclaimer { font-size: 12px; color: var(--ink-muted); margin-top: 18px; line-height: 1.5; border-top: 1px solid var(--hair); padding-top: 16px; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .themebtn { font-family: var(--mono); font-size: 12px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--hair-strong); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+  .themebtn:hover { color: var(--service); border-color: var(--service); }
+  .phasetag { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); border: 1px solid var(--hair); border-radius: 999px; padding: 5px 12px; }
+</style>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="phasetag">Solstice · Service Rewards Actor</span>
+    <button class="themebtn" id="themebtn" type="button">◐ Theme</button>
+  </div>
+
+  <header>
+    <p class="eyebrow">Reward Calculator &amp; Dashboard</p>
+    <h1>What could actors earn under the new operating model?</h1>
+    <p class="lede">Solstice splits every block reward into three streams: a <b>consensus</b> share to miners,
+      a <b>service</b> share to registered Orchestrators, and a <b>burn</b> residual. The service share
+      <b>w1</b> only steps up when quarterly on-chain deal volume clears a rising target. Set a scenario below to
+      see the streams, the volume gate, and the resulting rewards.</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- ================================================ CONTROL PANEL -->
+    <aside class="panel controls">
+
+      <div class="cgroup">
+        <h3>Network</h3>
+        <div class="field">
+          <label>FIL price <span class="val" id="v_price">$4.00</span></label>
+          <input type="range" id="price" min="0.5" max="30" step="0.5" value="4">
+        </div>
+        <div class="field">
+          <label>Block reward, network total <span class="val" id="v_br">67,000 FIL/d</span></label>
+          <input type="range" id="br" min="10000" max="120000" step="1000" value="67000">
+          <p class="hint">Total daily block reward minted across the network. ≈67,000 FIL/day today (FIP baseline).</p>
+        </div>
+      </div>
+
+      <div class="cgroup">
+        <h3>Timeline</h3>
+        <div class="field">
+          <label>Quarter shown <span class="val" id="v_q">Q4</span></label>
+          <input type="range" id="q" min="1" max="13" step="1" value="4">
+          <p class="hint">Q1 is the ungated bootstrap. From Q2 on, w1 steps up only when the gate passes.</p>
+        </div>
+      </div>
+
+      <div class="cgroup">
+        <h3>Service revenue</h3>
+        <div class="field">
+          <label>Model quarterly volume by</label>
+          <div class="seg" id="revmode" role="group" aria-label="Revenue input mode">
+            <button type="button" data-mode="storage" aria-pressed="true">Storage capacity</button>
+            <button type="button" data-mode="direct" aria-pressed="false">Direct FPV</button>
+          </div>
+        </div>
+
+        <div id="storagefields">
+          <div class="field">
+            <label>Paid storage served <span class="val" id="v_cap">500 TiB</span></label>
+            <div class="row2">
+              <input type="range" id="cap" min="1" max="2000" step="1" value="500">
+              <div class="seg" id="capunit" role="group" aria-label="Capacity unit">
+                <button type="button" data-unit="TiB" aria-pressed="true">TiB</button>
+                <button type="button" data-unit="PiB" aria-pressed="false">PiB</button>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Service revenue rate <span class="val" id="v_rate">$2.00 /TiB/mo</span></label>
+            <input type="range" id="rate" min="0.1" max="50" step="0.1" value="2">
+            <p class="hint">On-chain deal revenue settled through Filecoin Pay, per TiB of paid storage per month.</p>
+          </div>
+        </div>
+
+        <div id="directfields" class="hidden">
+          <div class="field">
+            <label>Quarterly volume (FPV), Q1 <span class="val" id="v_fpv">$3,000</span></label>
+            <input type="range" id="fpv" min="500" max="5000000" step="500" value="3000">
+            <p class="hint">Aggregated Filecoin Pay Volume in the first quarter, in USD.</p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Volume growth <span class="val" id="v_growth">+40% / quarter</span></label>
+          <input type="range" id="growth" min="0" max="150" step="5" value="40">
+          <p class="hint">How fast quarterly volume compounds. Gate targets escalate ~2.7× per step.</p>
+        </div>
+      </div>
+
+      <div class="cgroup">
+        <h3>This actor</h3>
+        <div class="field">
+          <label>Share of network service volume <span class="val" id="v_share">100%</span></label>
+          <input type="range" id="share" min="1" max="100" step="1" value="100">
+          <p class="hint">Phase 1 has a single Orchestrator (100%). Phase 2 splits w1 by each actor's FPV share.</p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ================================================ READOUT -->
+    <div class="readout">
+
+      <!-- KPI ROW -->
+      <div class="kpis">
+        <div class="kpi" style="--kc:var(--service)">
+          <p class="klabel">Service weight w1</p>
+          <div class="kval" id="k_w1">10<span class="kunit">%</span></div>
+          <p class="ksub" id="k_w1sub">of block reward</p>
+        </div>
+        <div class="kpi" style="--kc:var(--service)">
+          <p class="klabel">Service stream</p>
+          <div class="kval" id="k_svc">6,700<span class="kunit">FIL/d</span></div>
+          <p class="ksub" id="k_svcsub">to all Orchestrators</p>
+        </div>
+        <div class="kpi" style="--kc:var(--good)">
+          <p class="klabel">This actor earns</p>
+          <div class="kval" id="k_actor">6,700<span class="kunit">FIL/d</span></div>
+          <p class="ksub" id="k_actorsub">≈ $9.8M / yr</p>
+        </div>
+        <div class="kpi" style="--kc:var(--burn)">
+          <p class="klabel">Burned this quarter</p>
+          <div class="kval" id="k_burn">0<span class="kunit">FIL/d</span></div>
+          <p class="ksub" id="k_burnsub">residual w_b</p>
+        </div>
+      </div>
+
+      <!-- SPLIT BAR -->
+      <section class="card">
+        <div class="chead">
+          <h2>Block-reward split — <span id="split_q">Q4</span></h2>
+        </div>
+        <p class="csub">Every epoch, f02 divides the minted block reward by weight and pays each stream directly.
+          The service ceiling (α) rises on a fixed ramp; w1 fills it only as fast as the gate allows — the gap burns.</p>
+        <div class="splitbar" id="splitbar" role="img" aria-label="Block reward split by stream"></div>
+        <div class="slegend" id="splitlegend"></div>
+      </section>
+
+      <!-- GATE -->
+      <section class="card">
+        <div class="chead">
+          <h2>Volume gate — <span id="gate_q">Q4</span> step decision</h2>
+        </div>
+        <p class="csub">To raise w1 by 5 percentage points, the previous quarter's aggregated volume (FPV) must clear
+          an escalating USD target. Targets: $3.5K → $9.4K → $25.5K → … → $3.66M across the eight steps.</p>
+        <div class="gaterow">
+          <div class="gstat">
+            <p class="gl">Volume this scenario</p>
+            <div class="gv" id="g_measured">$0</div>
+          </div>
+          <div class="gstat">
+            <p class="gl">Target to step up</p>
+            <div class="gv" id="g_target">$0</div>
+          </div>
+          <div id="g_pill" class="pill na"><span class="dot"></span>—</div>
+        </div>
+        <div class="gatemeter">
+          <div class="track"><div class="fill" id="g_fill" style="width:0%"></div><div class="tgt" id="g_tgt" style="left:60%"></div></div>
+          <div class="glabels"><span>$0</span><span id="g_scalemax">target ×1.6</span></div>
+        </div>
+      </section>
+
+      <!-- PROJECTION: WEIGHTS -->
+      <section class="card">
+        <div class="chead">
+          <h2>Stream weights over time</h2>
+          <button class="btn-ghost tabtoggle" id="tbtn_w" type="button">Table</button>
+        </div>
+        <p class="csub">How the split evolves quarter by quarter under this scenario. Consensus recedes on its ramp;
+          service grows only when the gate keeps passing; anything unfilled burns.</p>
+        <div class="chartlegend">
+          <span class="li"><span class="sw" style="background:var(--consensus)"></span>Consensus w0</span>
+          <span class="li"><span class="sw" style="background:var(--service)"></span>Service w1</span>
+          <span class="li"><span class="sw" style="background:var(--burn)"></span>Burn w_b</span>
+        </div>
+        <div class="chartwrap">
+          <svg class="chart" id="chart_w" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Stacked area of stream weights by quarter"></svg>
+          <div class="ttip" id="tt_w"></div>
+        </div>
+        <div class="chartwrap hidden" id="tblwrap_w"></div>
+      </section>
+
+      <!-- PROJECTION: REWARDS -->
+      <section class="card">
+        <div class="chead">
+          <h2>This actor's reward stream</h2>
+          <button class="btn-ghost tabtoggle" id="tbtn_r" type="button">Table</button>
+        </div>
+        <p class="csub">Daily FIL to this actor across the timeline, at the current FIL price and volume share.
+          Hover any quarter for detail.</p>
+        <div class="chartlegend">
+          <span class="li"><span class="ln" style="background:var(--service)"></span>This actor · FIL/day</span>
+        </div>
+        <div class="chartwrap">
+          <svg class="chart" id="chart_r" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="This actor's daily reward by quarter"></svg>
+          <div class="ttip" id="tt_r"></div>
+        </div>
+        <div class="chartwrap hidden" id="tblwrap_r"></div>
+      </section>
+
+      <!-- METHOD -->
+      <details class="method">
+        <summary>How this is calculated</summary>
+        <div class="mbody">
+          <p>Every formula and constant below is taken directly from the Solstice FIP draft (Service Rewards Actor
+            &amp; Stream Weight Actor specification). Values are the FIP's frozen illustrative parameters; swap in
+            final governance-set numbers as they land.</p>
+
+          <h4>Consensus ceiling (α)</h4>
+          <p>A deterministic, ungated linear ramp — the maximum fraction available to service:</p>
+          <div class="eq">α(Q) = min(0.50, 0.05 + 0.05·Q)   →   consensus w0 = 1 − α</div>
+          <p>5% at launch, +5pp per quarter, reaching the 50% cap at Q9.</p>
+
+          <h4>Service weight (w1) &amp; burn</h4>
+          <ul>
+            <li>Q1 is the <b>bootstrap</b>: w1 tracks the ceiling (w1 = α), nothing burns.</li>
+            <li>End of Q1: w1 is set to <code>W1_INITIAL = 10%</code>.</li>
+            <li>Q2 onward: <code>QuarterlyGateCheck</code> raises w1 by <code>W1_STEP = 5pp</code> if the gate passes, capped at the ceiling α.</li>
+            <li>Burn residual: <code>w_b = α − w1</code>.</li>
+          </ul>
+
+          <h4>The volume gate</h4>
+          <div class="eq">AggregatedFPV(Q−1) ≥ ComputeTarget(w1)
+ComputeTarget(w1) = 3,500 · 2.7^steps,  steps = (w1 − 10%) / 5%,  clamped 0–7</div>
+          <p>Frozen USD schedule: $3.5K, $9.4K, $25.5K, $68.9K, $186K, $502K, $1.36M, $3.66M for the eight steps
+            (10→15% … 45→50%). Calibrated to current Filecoin Pay actuals at FIL = $1.</p>
+
+          <h4>Filecoin Pay Volume from storage</h4>
+          <div class="eq">FPV(Q) = rate ($/TiB/mo) · capacity (TiB) · 3 months · (1 + growth)^(Q−1)</div>
+          <p>FPV is gross on-chain deal value settled through Filecoin Pay, scoped to an Orchestrator's registered
+            (payer, operator) pairs. Here we approximate it from paid capacity and a revenue rate so the community
+            can reason in storage terms.</p>
+
+          <h4>Rewards</h4>
+          <div class="eq">service stream = w1 · block_reward_per_day
+this actor    = (actor's FPV share) · service stream</div>
+          <p>In Phase 1 the single Orchestrator's share is 100%. In Phase 2, w1 is divided among Orchestrators in
+            proportion to their FPV.</p>
+
+          <p class="disclaimer">Illustrative model for community insight, not financial advice or a governance
+            commitment. Block reward is held constant for clarity (real issuance declines over time). Gate parameters,
+            β/target schedule, ramp length, and phase timing are subject to the final FIP and governance. This tool
+            reads only public protocol parameters — no wallets, keys, or funds are involved.</p>
+        </div>
+      </details>
+
+    </div><!-- /readout -->
+  </div><!-- /grid -->
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- constants (from Solstice FIP) ----
+  const ALPHA_START = 0.05, ALPHA_STEP = 0.05, ALPHA_CAP = 0.50, RAMP_Q = 9;
+  const W1_INITIAL = 0.10, W1_STEP = 0.05, W1_CAP = 0.50;
+  const VOL_ENTRY = 3500, VOL_RATIO = 2.7, N_GATES = 8;
+  const NQ = 13;                    // quarters modelled
+  const TiB_PER_PiB = 1024;
+  const DAYS_PER_YEAR = 365;
+
+  const $ = id => document.getElementById(id);
+  const state = { revmode: "storage", capunit: "TiB" };
+
+  // ---- helpers ----
+  const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+  function alphaCeil(q){ return Math.min(ALPHA_CAP, ALPHA_START + ALPHA_STEP * q); } // end of quarter q
+  function computeTarget(w1){
+    let steps = Math.round((w1 - W1_INITIAL) / W1_STEP);
+    steps = clamp(steps, 0, N_GATES - 1);
+    return VOL_ENTRY * Math.pow(VOL_RATIO, steps);
+  }
+  function fmtUSD(v){
+    if (v >= 1e9) return "$" + (v/1e9).toFixed(2) + "B";
+    if (v >= 1e6) return "$" + (v/1e6).toFixed(2) + "M";
+    if (v >= 1e3) return "$" + (v/1e3).toFixed(1) + "K";
+    return "$" + Math.round(v).toLocaleString();
+  }
+  function fmtUSDfull(v){
+    if (v >= 1e6) return "$" + (v/1e6).toFixed(2) + "M";
+    if (v >= 1e3) return "$" + Math.round(v).toLocaleString();
+    return "$" + v.toFixed(0);
+  }
+  function fmtFIL(v){
+    if (v >= 1e6) return (v/1e6).toFixed(2) + "M";
+    if (v >= 1000) return Math.round(v).toLocaleString();
+    if (v >= 10) return v.toFixed(0);
+    return v.toFixed(1);
+  }
+
+  // ---- read inputs ----
+  function inputs(){
+    const price  = +$("price").value;
+    const brDay  = +$("br").value;
+    const qShown = +$("q").value;
+    const growth = +$("growth").value / 100;
+    const share  = +$("share").value / 100;
+    // Q1 FPV base
+    let fpvBase;
+    if (state.revmode === "storage"){
+      const capRaw = +$("cap").value;
+      const capTiB = state.capunit === "PiB" ? capRaw * TiB_PER_PiB : capRaw;
+      const rate   = +$("rate").value;             // $/TiB/month
+      fpvBase = rate * capTiB * 3;                  // quarterly
+    } else {
+      fpvBase = +$("fpv").value;
+    }
+    return { price, brDay, qShown, growth, share, fpvBase };
+  }
+  function fpvAt(q, inp){ return inp.fpvBase * Math.pow(1 + inp.growth, q - 1); }
+
+  // ---- simulate the whole timeline ----
+  function simulate(inp){
+    const rows = [];
+    let w1 = W1_INITIAL;                             // value entering the current quarter
+    for (let q = 1; q <= NQ; q++){
+      const alpha = alphaCeil(q);
+      let gate = null, target = null, measuredPrev = null;
+      if (q === 1){
+        w1 = W1_INITIAL;                             // bootstrap resolves to 10%
+      } else {
+        target = computeTarget(w1);
+        measuredPrev = fpvAt(q - 1, inp);
+        gate = measuredPrev >= target;
+        if (gate) w1 = Math.min(w1 + W1_STEP, alpha);
+      }
+      const w1c = Math.min(w1, alpha);
+      const w0 = 1 - alpha;
+      const burn = Math.max(0, alpha - w1c);
+      const svcFil = w1c * inp.brDay;
+      const actorFil = svcFil * inp.share;
+      const burnFil = burn * inp.brDay;
+      rows.push({
+        q, alpha, w0, w1: w1c, burn,
+        gate, target, measuredPrev,
+        fpvThis: fpvAt(q, inp),
+        svcFil, actorFil, burnFil,
+        actorUsdYr: actorFil * DAYS_PER_YEAR * inp.price
+      });
+    }
+    return rows;
+  }
+
+  // ---- SVG chart helpers ----
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 720, H = 300, M = { t: 16, r: 16, b: 34, l: 52 };
+  const PW = W - M.l - M.r, PH = H - M.t - M.b;
+  function el(tag, attrs){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function xAt(i, n){ return M.l + (n === 1 ? PW/2 : PW * i / (n - 1)); }
+
+  // stacked area: consensus (bottom) / service / burn — one axis 0..100%
+  function drawWeights(rows){
+    const svg = $("chart_w"); svg.innerHTML = "";
+    const n = rows.length;
+    const yPct = p => M.t + PH * (1 - p);           // p in 0..1
+    // gridlines + y labels
+    for (let g = 0; g <= 100; g += 25){
+      const y = yPct(g/100);
+      svg.appendChild(el("line", { x1:M.l, y1:y, x2:W-M.r, y2:y, stroke:"var(--grid)", "stroke-width":1 }));
+      const t = el("text", { x:M.l-8, y:y+3, "text-anchor":"end", class:"axislbl" }); t.textContent = g + "%"; svg.appendChild(t);
+    }
+    // build cumulative bands: order bottom->top = consensus, service, burn
+    const series = [
+      { key:"w0",   color:"var(--consensus)", op:.85 },
+      { key:"w1",   color:"var(--service)",   op:.92 },
+      { key:"burn", color:"var(--burn)",      op:.80 }
+    ];
+    let base = rows.map(()=>0);
+    series.forEach(s => {
+      const top = rows.map((r,i) => base[i] + r[s.key]);
+      let d = "";
+      rows.forEach((r,i)=>{ d += (i?" L":"M") + xAt(i,n).toFixed(1) + " " + yPct(top[i]).toFixed(1); });
+      for (let i = n-1; i >= 0; i--){ d += " L" + xAt(i,n).toFixed(1) + " " + yPct(base[i]).toFixed(1); }
+      d += " Z";
+      svg.appendChild(el("path", { d, fill:s.color, "fill-opacity":s.op, stroke:"var(--surface)", "stroke-width":1 }));
+      base = top;
+    });
+    // x labels + selected marker
+    const inpQ = +$("q").value;
+    rows.forEach((r,i)=>{
+      const x = xAt(i,n);
+      const t = el("text", { x, y:H-14, "text-anchor":"middle", class:"axislbl" }); t.textContent = "Q"+r.q; svg.appendChild(t);
+      if (r.q === inpQ){
+        svg.appendChild(el("line", { x1:x, y1:M.t, x2:x, y2:M.t+PH, stroke:"var(--ink)", "stroke-width":1, "stroke-dasharray":"3 3", "stroke-opacity":.5 }));
+      }
+    });
+    attachHover(svg, "tt_w", rows, n, (r)=>{
+      return `<div class="tt-h">Q${r.q}</div>`
+        + row("var(--consensus)","Consensus", (r.w0*100).toFixed(0)+"%")
+        + row("var(--service)","Service", (r.w1*100).toFixed(0)+"%")
+        + row("var(--burn)","Burn", (r.burn*100).toFixed(0)+"%");
+    });
+    function row(c,k,v){ return `<div class="tt-r"><span class="k"><span class="sw" style="background:${c}"></span>${k}</span><span class="v">${v}</span></div>`; }
+  }
+
+  // line: actor FIL/day
+  function drawRewards(rows){
+    const svg = $("chart_r"); svg.innerHTML = "";
+    const n = rows.length;
+    const maxV = Math.max(1, ...rows.map(r=>r.actorFil)) * 1.15;
+    const yV = v => M.t + PH * (1 - v / maxV);
+    for (let g = 0; g <= 4; g++){
+      const v = maxV * g/4, y = yV(v);
+      svg.appendChild(el("line", { x1:M.l, y1:y, x2:W-M.r, y2:y, stroke:"var(--grid)", "stroke-width":1 }));
+      const t = el("text", { x:M.l-8, y:y+3, "text-anchor":"end", class:"axislbl" }); t.textContent = fmtFIL(v); svg.appendChild(t);
+    }
+    // area under line
+    let dl = "", da = "";
+    rows.forEach((r,i)=>{ const x=xAt(i,n), y=yV(r.actorFil); dl += (i?" L":"M")+x.toFixed(1)+" "+y.toFixed(1); da += (i?" L":"M")+x.toFixed(1)+" "+y.toFixed(1); });
+    da += " L"+xAt(n-1,n).toFixed(1)+" "+yV(0)+" L"+xAt(0,n).toFixed(1)+" "+yV(0)+" Z";
+    svg.appendChild(el("path", { d:da, fill:"var(--service)", "fill-opacity":.12 }));
+    svg.appendChild(el("path", { d:dl, fill:"none", stroke:"var(--service)", "stroke-width":2.5, "stroke-linejoin":"round", "stroke-linecap":"round" }));
+    const inpQ = +$("q").value;
+    rows.forEach((r,i)=>{
+      const x=xAt(i,n), y=yV(r.actorFil);
+      const t = el("text", { x, y:H-14, "text-anchor":"middle", class:"axislbl" }); t.textContent="Q"+r.q; svg.appendChild(t);
+      const em = r.q === inpQ;
+      svg.appendChild(el("circle", { cx:x, cy:y, r:em?5:3.2, fill:em?"var(--service)":"var(--surface)", stroke:"var(--service)", "stroke-width":2 }));
+    });
+    attachHover(svg, "tt_r", rows, n, (r)=>{
+      return `<div class="tt-h">Q${r.q}</div>`
+        + `<div class="tt-r"><span class="k"><span class="sw" style="background:var(--service)"></span>FIL/day</span><span class="v">${fmtFIL(r.actorFil)}</span></div>`
+        + `<div class="tt-r"><span class="k">USD/yr</span><span class="v">${fmtUSD(r.actorUsdYr)}</span></div>`
+        + `<div class="tt-r"><span class="k">w1</span><span class="v">${(r.w1*100).toFixed(0)}%</span></div>`;
+    });
+  }
+
+  // shared hover: nearest-column crosshair
+  function attachHover(svg, ttId, rows, n, html){
+    const tip = $(ttId);
+    const cross = el("line", { x1:0,y1:M.t,x2:0,y2:M.t+PH, stroke:"var(--ink)", "stroke-width":1, "stroke-opacity":0, "stroke-dasharray":"2 3" });
+    svg.appendChild(cross);
+    const hit = el("rect", { x:M.l, y:M.t, width:PW, height:PH, fill:"transparent" });
+    svg.appendChild(hit);
+    function move(ev){
+      const rect = svg.getBoundingClientRect();
+      const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+      const rel = px / rect.width * W;
+      let i = Math.round((rel - M.l) / (PW / (n - 1)));
+      i = clamp(i, 0, n - 1);
+      const x = xAt(i, n);
+      cross.setAttribute("x1", x); cross.setAttribute("x2", x); cross.setAttribute("stroke-opacity", .4);
+      tip.innerHTML = html(rows[i]);
+      tip.style.opacity = 1;
+      tip.style.left = (x / W * rect.width) + "px";
+      tip.style.top  = (M.t + PH * 0.15 / 1) / H * rect.height + "px";
+    }
+    function leave(){ tip.style.opacity = 0; cross.setAttribute("stroke-opacity", 0); }
+    svg.addEventListener("mousemove", move);
+    svg.addEventListener("mouseleave", leave);
+    svg.addEventListener("touchstart", move, {passive:true});
+    svg.addEventListener("touchmove", move, {passive:true});
+    svg.addEventListener("touchend", leave);
+  }
+
+  // ---- tables ----
+  function buildTableW(rows){
+    const sel = +$("q").value;
+    let h = `<table class="data"><thead><tr><th>Q</th><th>Ceiling α</th><th>Consensus w0</th><th>Service w1</th><th>Burn w_b</th><th>Gate</th></tr></thead><tbody>`;
+    rows.forEach(r=>{
+      const chip = r.gate === null ? `<span class="chip na">boot</span>` : (r.gate ? `<span class="chip pass">pass</span>` : `<span class="chip fail">fail</span>`);
+      h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${(r.alpha*100).toFixed(0)}%</td><td>${(r.w0*100).toFixed(0)}%</td><td>${(r.w1*100).toFixed(0)}%</td><td>${(r.burn*100).toFixed(0)}%</td><td>${chip}</td></tr>`;
+    });
+    return h + `</tbody></table>`;
+  }
+  function buildTableR(rows){
+    const sel = +$("q").value;
+    let h = `<table class="data"><thead><tr><th>Q</th><th>FPV (prev)</th><th>Target</th><th>Service FIL/d</th><th>Actor FIL/d</th><th>Actor $/yr</th></tr></thead><tbody>`;
+    rows.forEach(r=>{
+      h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${r.measuredPrev==null?'—':fmtUSD(r.measuredPrev)}</td><td>${r.target==null?'—':fmtUSD(r.target)}</td><td>${fmtFIL(r.svcFil)}</td><td>${fmtFIL(r.actorFil)}</td><td>${fmtUSD(r.actorUsdYr)}</td></tr>`;
+    });
+    return h + `</tbody></table>`;
+  }
+
+  // ---- split bar + legend ----
+  function drawSplit(cur, inp){
+    const bar = $("splitbar"); bar.innerHTML = "";
+    const segs = [
+      { nm:"Consensus", sub:"to miners (w0)", c:"var(--consensus)", w:cur.w0, fil:cur.w0*inp.brDay },
+      { nm:"Service",   sub:"to Orchestrators (w1)", c:"var(--service)", w:cur.w1, fil:cur.svcFil },
+      { nm:"Burn",      sub:"destroyed (w_b)", c:"var(--burn)", w:cur.burn, fil:cur.burnFil }
+    ];
+    segs.forEach(s=>{
+      const d = document.createElement("div");
+      d.className = "splitseg" + (s.w < 0.06 ? " tiny" : "");
+      d.style.flexBasis = (s.w*100) + "%";
+      d.style.background = s.c;
+      d.innerHTML = `<span class="pct">${(s.w*100).toFixed(0)}%</span>`;
+      bar.appendChild(d);
+    });
+    const lg = $("splitlegend"); lg.innerHTML = "";
+    segs.forEach(s=>{
+      const li = document.createElement("div");
+      li.className = "li";
+      li.innerHTML = `<span class="sw" style="background:${s.c}"></span><span><span class="nm">${s.nm}</span> <span class="vv">${(s.w*100).toFixed(0)}% · ${fmtFIL(s.fil)} FIL/d</span><small>${s.sub}</small></span>`;
+      lg.appendChild(li);
+    });
+  }
+
+  // ---- gate card ----
+  function drawGate(cur){
+    const q = cur.q;
+    $("gate_q").textContent = "Q" + q;
+    if (cur.gate === null || cur.target === null){
+      $("g_measured").innerHTML = "—";
+      $("g_target").innerHTML = "<small>bootstrap — no gate</small>";
+      const p = $("g_pill"); p.className = "pill na"; p.innerHTML = `<span class="dot"></span>Q1 BOOTSTRAP`;
+      $("g_fill").style.width = "0%";
+      $("g_tgt").style.left = "62%";
+      $("g_scalemax").textContent = "";
+      return;
+    }
+    $("g_measured").textContent = fmtUSDfull(cur.measuredPrev);
+    $("g_target").textContent = fmtUSDfull(cur.target);
+    const pass = cur.gate;
+    const p = $("g_pill");
+    p.className = "pill " + (pass ? "pass" : "fail");
+    p.innerHTML = `<span class="dot"></span>${pass ? "GATE PASSES · w1 +5pp" : "GATE FAILS · w1 holds"}`;
+    const scaleMax = Math.max(cur.measuredPrev, cur.target) * 1.15;
+    $("g_fill").style.width = clamp(cur.measuredPrev / scaleMax * 100, 0, 100) + "%";
+    $("g_fill").style.background = pass ? "var(--good)" : "var(--burn)";
+    $("g_tgt").style.left = clamp(cur.target / scaleMax * 100, 0, 100) + "%";
+    $("g_scalemax").textContent = fmtUSD(scaleMax);
+  }
+
+  // ---- master render ----
+  function render(){
+    const inp = inputs();
+    const rows = simulate(inp);
+    const cur = rows[clamp(inp.qShown,1,NQ) - 1];
+
+    // value labels
+    $("v_price").textContent = "$" + inp.price.toFixed(2);
+    $("v_br").textContent = inp.brDay.toLocaleString() + " FIL/d";
+    $("v_q").textContent = "Q" + inp.qShown;
+    $("v_growth").textContent = "+" + (inp.growth*100).toFixed(0) + "% / quarter";
+    $("v_share").textContent = (inp.share*100).toFixed(0) + "%";
+    if (state.revmode === "storage"){
+      const capRaw = +$("cap").value;
+      $("v_cap").textContent = capRaw.toLocaleString() + " " + state.capunit;
+      $("v_rate").textContent = "$" + (+$("rate").value).toFixed(2) + " /TiB/mo";
+    } else {
+      $("v_fpv").textContent = fmtUSDfull(+$("fpv").value);
+    }
+    $("split_q").textContent = "Q" + cur.q;
+
+    // KPIs
+    $("k_w1").innerHTML = (cur.w1*100).toFixed(0) + '<span class="kunit">%</span>';
+    $("k_w1sub").textContent = "ceiling α = " + (cur.alpha*100).toFixed(0) + "%";
+    $("k_svc").innerHTML = fmtFIL(cur.svcFil) + '<span class="kunit">FIL/d</span>';
+    $("k_svcsub").textContent = "≈ " + fmtUSD(cur.svcFil*DAYS_PER_YEAR*inp.price) + " / yr";
+    $("k_actor").innerHTML = fmtFIL(cur.actorFil) + '<span class="kunit">FIL/d</span>';
+    $("k_actorsub").textContent = "≈ " + fmtUSD(cur.actorUsdYr) + " / yr · " + (inp.share*100).toFixed(0) + "% share";
+    $("k_burn").innerHTML = fmtFIL(cur.burnFil) + '<span class="kunit">FIL/d</span>';
+    $("k_burnsub").textContent = (cur.burn*100).toFixed(0) + "% of reward · " + fmtUSD(cur.burnFil*DAYS_PER_YEAR*inp.price) + "/yr";
+
+    drawSplit(cur, inp);
+    drawGate(cur);
+    drawWeights(rows);
+    drawRewards(rows);
+    $("tblwrap_w").innerHTML = buildTableW(rows);
+    $("tblwrap_r").innerHTML = buildTableR(rows);
+  }
+
+  // ---- wire up ----
+  ["price","br","q","growth","share","cap","rate","fpv"].forEach(id => {
+    $(id).addEventListener("input", render);
+  });
+  // revenue mode toggle
+  $("revmode").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    state.revmode = b.dataset.mode;
+    [...$("revmode").children].forEach(x => x.setAttribute("aria-pressed", x === b));
+    $("storagefields").classList.toggle("hidden", state.revmode !== "storage");
+    $("directfields").classList.toggle("hidden", state.revmode !== "direct");
+    render();
+  });
+  // capacity unit toggle
+  $("capunit").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    state.capunit = b.dataset.unit;
+    [...$("capunit").children].forEach(x => x.setAttribute("aria-pressed", x === b));
+    render();
+  });
+  // table toggles
+  function toggleTable(btn, chartSel, tblSel){
+    btn.addEventListener("click", () => {
+      const showTbl = tblSel.classList.contains("hidden");
+      tblSel.classList.toggle("hidden", !showTbl);
+      chartSel.classList.toggle("hidden", showTbl);
+      btn.textContent = showTbl ? "Chart" : "Table";
+    });
+  }
+  toggleTable($("tbtn_w"), $("chart_w").closest(".chartwrap"), $("tblwrap_w"));
+  toggleTable($("tbtn_r"), $("chart_r").closest(".chartwrap"), $("tblwrap_r"));
+  // theme
+  $("themebtn").addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const isDark = cur ? cur === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", isDark ? "light" : "dark");
+    render();
+  });
+
+  render();
+})();
+</script>
