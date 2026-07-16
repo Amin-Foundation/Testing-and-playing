@@ -17,7 +17,7 @@
     --service-soft:#dbe9fb;
     --consensus:   #8792a3;   /* w0  */
     --consensus-soft:#e7eaef;
-    --burn:        #eb6834;   /* w_b */
+    --burn:        #eb6834;   /* w0 (burn) */
     --burn-soft:   #fbe2d6;
 
     --good:        #0ca30c;
@@ -282,24 +282,21 @@
 <div class="wrap">
 
   <div class="topbar">
-    <span class="phasetag">Solstice · Service Rewards Actor</span>
+    <span class="phasetag">Solstice · Orchestrator Rewards</span>
     <button class="themebtn" id="themebtn" type="button">◐ Theme</button>
   </div>
 
   <header>
     <p class="eyebrow">Reward Calculator &amp; Dashboard</p>
-    <h1>What could actors earn under the new operating model?</h1>
-    <p class="lede">Solstice splits every block reward into three streams: a <b>consensus</b> share to miners,
-      a <b>service</b> share to registered Orchestrators, and a <b>burn</b> residual. The service share
-      <b>w1</b> only steps up when quarterly on-chain deal volume clears a rising target. Set a scenario below to
-      see the streams, the volume gate, and the resulting rewards.</p>
+    <h1>What could Orchestrators earn under the new operating model?</h1>
+    <p class="lede">Solstice pays registered <b>Orchestrators</b> a share of every block reward. That service
+      share (<b>w2</b>) grows only when quarterly on-chain deal volume clears a rising target. Set a scenario to
+      see the split, the gate, and what an Orchestrator earns.</p>
     <div class="opmodel">
       <span class="ompill">Operating model</span>
-      Rewards are <b>set by mechanism, not discretion</b>. The <b>Stream-Split Controller</b> (Allocation
-      Governance) owns the weights — the w0 ramp, w1, and the gate. The <b>Service Rewards Actor</b>
-      (Registry Governance, a 2-of-2 of FF + FilOZ) only decides <b>who is registered</b> and <b>how w1 is
-      divided</b> among Orchestrators; it cannot change the weights, skip the hold, or hand-pick payouts. f02
-      pays each Orchestrator directly every epoch — no one signs the routine flow.
+      Rewards are <b>set by mechanism, not discretion</b>: governance decides who is registered and how the
+      service share is split — never the weights, and it can't hand-pick payouts. f02 pays each Orchestrator
+      directly every epoch.
     </div>
   </header>
 
@@ -316,9 +313,8 @@
           <p class="hint">Only scales the USD value of FIL rewards. The FIP calibrates the gate targets at FIL = $1.</p>
         </div>
         <div class="field">
-          <label>Block reward, network total <span class="val" id="v_br">50,000 FIL/d</span></label>
-          <input type="range" id="br" min="10000" max="120000" step="1000" value="50000">
-          <p class="hint">Total daily block reward minted network-wide. 50,000 FIL/day is the FIP worked-example placeholder — verify against chain actuals.</p>
+          <label>Block reward, network total <span class="val">50,000 FIL/d</span></label>
+          <p class="hint">Fixed network constant — the total daily block reward minted network-wide (FIP worked-example placeholder, to verify against chain actuals). Not a lever the operating model changes.</p>
         </div>
       </div>
 
@@ -327,7 +323,7 @@
         <div class="field">
           <label>Quarter shown <span class="val" id="v_q">Q4</span></label>
           <input type="range" id="q" min="1" max="13" step="1" value="4">
-          <p class="hint">Q1 is the ungated bootstrap. From Q2 on, w1 steps up only when the gate passes.</p>
+          <p class="hint">Q1 is the ungated bootstrap. From Q2 on, w2 steps up only when the gate passes.</p>
         </div>
       </div>
 
@@ -377,11 +373,11 @@
       </div>
 
       <div class="cgroup">
-        <h3>This actor</h3>
+        <h3>This Orchestrator</h3>
         <div class="field">
           <label>Share of network service volume <span class="val" id="v_share">100%</span></label>
           <input type="range" id="share" min="1" max="100" step="1" value="100">
-          <p class="hint">Phase 1 has a single Orchestrator (100%). Phase 2 splits w1 by each actor's FPV share.</p>
+          <p class="hint">Phase 1 has a single Orchestrator (100%). Phase 2 splits w2 by each Orchestrator's FPV share.</p>
         </div>
       </div>
 
@@ -393,7 +389,7 @@
       <!-- KPI ROW -->
       <div class="kpis">
         <div class="kpi" style="--kc:var(--service)">
-          <p class="klabel">Service weight w1</p>
+          <p class="klabel">Service weight w2</p>
           <div class="kval" id="k_w1">10<span class="kunit">%</span></div>
           <p class="ksub" id="k_w1sub">of block reward</p>
         </div>
@@ -403,14 +399,14 @@
           <p class="ksub" id="k_svcsub">to all Orchestrators</p>
         </div>
         <div class="kpi" style="--kc:var(--good)">
-          <p class="klabel">This actor earns</p>
+          <p class="klabel">This Orchestrator earns</p>
           <div class="kval" id="k_actor">6,700<span class="kunit">FIL/d</span></div>
           <p class="ksub" id="k_actorsub">≈ $9.8M / yr</p>
         </div>
         <div class="kpi" style="--kc:var(--burn)">
           <p class="klabel">Burned this quarter</p>
           <div class="kval" id="k_burn">0<span class="kunit">FIL/d</span></div>
-          <p class="ksub" id="k_burnsub">residual w_b</p>
+          <p class="ksub" id="k_burnsub">residual w0</p>
         </div>
       </div>
 
@@ -420,7 +416,7 @@
           <h2>Block-reward split — <span id="split_q">Q4</span></h2>
         </div>
         <p class="csub">Every epoch, f02 divides the minted block reward by weight and pays each stream directly.
-          The service ceiling (α) rises on a fixed ramp; w1 fills it only as fast as the gate allows — the gap burns.</p>
+          The service ceiling (α) rises on a fixed ramp; w2 fills it only as fast as the gate allows — the gap burns.</p>
         <div class="splitbar" id="splitbar" role="img" aria-label="Block reward split by stream"></div>
         <div class="slegend" id="splitlegend"></div>
       </section>
@@ -430,8 +426,8 @@
         <div class="chead">
           <h2>Volume gate — <span id="gate_q">Q4</span> step decision</h2>
         </div>
-        <p class="csub">To raise w1 by 5 percentage points, the previous quarter's aggregated volume (FPV) must clear
-          an escalating USD target. Targets: $3.5K → $9.4K → $25.5K → … → $3.66M across the eight steps.</p>
+        <p class="csub">To raise w2 by 5 percentage points, the previous quarter's aggregated volume (FPV) must clear
+          an escalating USD target. Targets: $3.5K → $9.45K → $25.5K → … → $3.66M across the eight steps.</p>
         <div class="gaterow">
           <div class="gstat">
             <p class="gl">Prior-quarter volume (FPV)</p>
@@ -458,9 +454,9 @@
         <p class="csub">How the split evolves quarter by quarter under this scenario. Consensus recedes on its ramp;
           service grows only when the gate keeps passing; anything unfilled burns.</p>
         <div class="chartlegend">
-          <span class="li"><span class="sw" style="background:var(--consensus)"></span>Consensus w0</span>
-          <span class="li"><span class="sw" style="background:var(--service)"></span>Service w1</span>
-          <span class="li"><span class="sw" style="background:var(--burn)"></span>Burn w_b</span>
+          <span class="li"><span class="sw" style="background:var(--consensus)"></span>Consensus w1</span>
+          <span class="li"><span class="sw" style="background:var(--service)"></span>Service w2</span>
+          <span class="li"><span class="sw" style="background:var(--burn)"></span>Burn w0</span>
         </div>
         <div class="chartwrap">
           <svg class="chart" id="chart_w" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Stacked area of stream weights by quarter"></svg>
@@ -472,16 +468,16 @@
       <!-- PROJECTION: REWARDS -->
       <section class="card">
         <div class="chead">
-          <h2>This actor's reward stream</h2>
+          <h2>This Orchestrator's reward stream</h2>
           <button class="btn-ghost tabtoggle" id="tbtn_r" type="button">Table</button>
         </div>
-        <p class="csub">Daily FIL to this actor across the timeline, at the current FIL price and volume share.
+        <p class="csub">Daily FIL to this Orchestrator across the timeline, at the current FIL price and volume share.
           Hover any quarter for detail.</p>
         <div class="chartlegend">
-          <span class="li"><span class="ln" style="background:var(--service)"></span>This actor · FIL/day</span>
+          <span class="li"><span class="ln" style="background:var(--service)"></span>This Orchestrator · FIL/day</span>
         </div>
         <div class="chartwrap">
-          <svg class="chart" id="chart_r" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="This actor's daily reward by quarter"></svg>
+          <svg class="chart" id="chart_r" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="This Orchestrator's daily reward by quarter"></svg>
           <div class="ttip" id="tt_r"></div>
         </div>
         <div class="chartwrap hidden" id="tblwrap_r"></div>
@@ -495,33 +491,34 @@
             &amp; Stream Weight Actor specification). Values are the FIP's frozen illustrative parameters; swap in
             final governance-set numbers as they land.</p>
 
-          <h4>Consensus ceiling (α)</h4>
-          <p>A deterministic, ungated linear ramp — the maximum fraction available to service. Because the ramp is
-            continuous, the reward earned over a quarter uses the ceiling <b>averaged across that quarter</b>:</p>
-          <div class="eq">α_avg(Q) = min(0.50, 0.025 + 0.05·Q)   →   consensus w0 = 1 − α_avg
+          <h4>Consensus weight (w1) &amp; the service ceiling (α)</h4>
+          <p>Consensus <b>w1</b> declines on a deterministic, ungated linear ramp from 95% to a 50% floor over ~9
+            quarters. The service ceiling α = 1 − w1 is what's available to service. Because the ramp is continuous,
+            the reward earned over a quarter uses the ceiling <b>averaged across that quarter</b>:</p>
+          <div class="eq">α_avg(Q) = min(0.50, 0.025 + 0.05·Q)   →   consensus w1 = 1 − α_avg
 Q1 7.5% · Q2 12.5% · Q3 17.5% · Q4 22.5% … reaching the 50% cap around Q10</div>
 
-          <h4>Service weight (w1) &amp; burn</h4>
+          <h4>Service weight (w2) &amp; burn (w0)</h4>
           <ul>
-            <li>Q1 is the <b>ungated bootstrap</b>: w1 tracks the ceiling (earns ~7.5% avg), nothing burns.</li>
-            <li>Entering Q2, w1 resolves to <code>W1_INITIAL = 10%</code>.</li>
-            <li>Q2 onward: <code>QuarterlyGateCheck</code> reads the just-ended quarter's FPV; a pass raises w1 by
-              <code>W1_STEP = 5pp</code>, capped by the ramp at quarter end.</li>
-            <li>Burn residual: <code>w_b = α_avg − w1</code> — a missed gate's cost shows up the <i>following</i> quarter,
-              as the ceiling ramps on while w1 stays put.</li>
+            <li>Q1 is the <b>ungated bootstrap</b>: w2 tracks the ceiling (earns ~7.5% avg), nothing burns.</li>
+            <li>Entering Q2, w2 resolves to 10%.</li>
+            <li>Q2 onward: <code>QuarterlyGateCheck</code> reads the just-ended quarter's FPV; a pass raises w2 by
+              5pp, capped by the ceiling at quarter end.</li>
+            <li>Burn residual: <code>w0 = 1 − w1 − w2 = α_avg − w2</code> — a missed gate's cost shows up the
+              <i>following</i> quarter, as the ceiling ramps on while w2 stays put.</li>
           </ul>
 
           <h4>The volume gate</h4>
-          <div class="eq">AggregatedFPV(Q−1) ≥ ComputeTarget(w1)
-ComputeTarget(w1) = 3,500 · 2.7^steps,  steps = (w1 − 10%) / 5%,  clamped 0–7</div>
+          <div class="eq">AggregatedFPV(Q−1) ≥ ComputeTarget(w2)
+ComputeTarget(w2) = 3,500 · 2.7^steps,  steps = (w2 − 10%) / 5%,  clamped 0–7</div>
           <p>Frozen USD schedule: $3.5K, $9.45K, $25.5K, $68.9K, $186K, $502K, $1.36M, $3.66M for the eight steps
             (10→15% … 45→50%). Targets multiply ~2.7× per step; calibrated to Filecoin Pay actuals at FIL = $1.</p>
 
           <h4>Reconciliation with the FIP worked example</h4>
           <p>At <b>50,000 FIL/day</b> and <b>FIL = $1</b>, a sole Phase-1 Orchestrator earns
             <b>~342K / 456K / 684K / 912K FIL</b> across Q1–Q4, with ~114K FIL burned per gated quarter — matching the
-            "Year of Orchestrator Selling Fil One Storage" worked example in the Solstice Decisions deck. Set the block
-            reward to 50,000 and FIL price to $1 to reproduce it.</p>
+            "Year of Orchestrator Selling Fil One Storage" worked example in the Solstice Decisions deck. Use the
+            "Load FIP worked example" preset to reproduce it.</p>
 
           <h4>Filecoin Pay Volume from storage</h4>
           <div class="eq">FPV(Q) = rate ($/TiB/mo) · capacity (TiB) · 3 months · (1 + growth)^(Q−1)</div>
@@ -530,9 +527,9 @@ ComputeTarget(w1) = 3,500 · 2.7^steps,  steps = (w1 − 10%) / 5%,  clamped 0�
             can reason in storage terms.</p>
 
           <h4>Rewards</h4>
-          <div class="eq">service stream = w1 · block_reward_per_day
-this actor    = (actor's FPV share) · service stream</div>
-          <p>In Phase 1 the single Orchestrator's share is 100%. In Phase 2, w1 is divided among Orchestrators in
+          <div class="eq">service stream   = w2 · block_reward_per_day
+this Orchestrator = (its FPV share) · service stream</div>
+          <p>In Phase 1 the single Orchestrator's share is 100%. In Phase 2, w2 is divided among Orchestrators in
             proportion to their FPV (the SRA's <code>SplitRule</code>, written via <code>SetShares</code>). A failed
             per-Orchestrator send burns that share — it is never held or clawed back — and the registry is bounded by
             <code>MAX_RECIPIENTS</code>.</p>
@@ -569,6 +566,7 @@ this actor    = (actor's FPV share) · service stream</div>
   const NQ = 13;                    // quarters modelled
   const TiB_PER_PiB = 1024;
   const DAYS_PER_YEAR = 365;
+  const BR_PER_DAY = 50000;         // fixed network block reward (FIP placeholder), not user-adjustable
 
   const $ = id => document.getElementById(id);
   const state = { revmode: "storage", capunit: "TiB" };
@@ -608,7 +606,7 @@ this actor    = (actor's FPV share) · service stream</div>
   // ---- read inputs ----
   function inputs(){
     const price  = +$("price").value;
-    const brDay  = +$("br").value;
+    const brDay  = BR_PER_DAY;
     const qShown = +$("q").value;
     const growth = +$("growth").value / 100;
     const share  = +$("share").value / 100;
@@ -721,7 +719,7 @@ this actor    = (actor's FPV share) · service stream</div>
     function row(c,k,v){ return `<div class="tt-r"><span class="k"><span class="sw" style="background:${c}"></span>${k}</span><span class="v">${v}</span></div>`; }
   }
 
-  // line: actor FIL/day
+  // line: Orchestrator FIL/day
   function drawRewards(rows){
     const svg = $("chart_r"); svg.innerHTML = "";
     const n = rows.length;
@@ -749,7 +747,7 @@ this actor    = (actor's FPV share) · service stream</div>
       return `<div class="tt-h">Q${r.q}</div>`
         + `<div class="tt-r"><span class="k"><span class="sw" style="background:var(--service)"></span>FIL/day</span><span class="v">${fmtFIL(r.actorFil)}</span></div>`
         + `<div class="tt-r"><span class="k">USD/yr</span><span class="v">${fmtUSD(r.actorUsdYr)}</span></div>`
-        + `<div class="tt-r"><span class="k">w1</span><span class="v">${fmtPct(r.w1)}</span></div>`;
+        + `<div class="tt-r"><span class="k">w2</span><span class="v">${fmtPct(r.w1)}</span></div>`;
     });
   }
 
@@ -784,7 +782,7 @@ this actor    = (actor's FPV share) · service stream</div>
   // ---- tables ----
   function buildTableW(rows){
     const sel = +$("q").value;
-    let h = `<table class="data"><thead><tr><th>Q</th><th>Ceiling α</th><th>Consensus w0</th><th>Service w1</th><th>Burn w_b</th><th>Gate</th></tr></thead><tbody>`;
+    let h = `<table class="data"><thead><tr><th>Q</th><th>Ceiling α</th><th>Consensus w1</th><th>Service w2</th><th>Burn w0</th><th>Gate</th></tr></thead><tbody>`;
     rows.forEach(r=>{
       const chip = r.gate === null ? `<span class="chip na">boot</span>` : (r.gate ? `<span class="chip pass">pass</span>` : `<span class="chip fail">fail</span>`);
       h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${fmtPct(r.alpha)}</td><td>${fmtPct(r.w0)}</td><td>${fmtPct(r.w1)}</td><td>${fmtPct(r.burn)}</td><td>${chip}</td></tr>`;
@@ -793,7 +791,7 @@ this actor    = (actor's FPV share) · service stream</div>
   }
   function buildTableR(rows){
     const sel = +$("q").value;
-    let h = `<table class="data"><thead><tr><th>Q</th><th>FPV (prev)</th><th>Target</th><th>Service FIL/d</th><th>Actor FIL/d</th><th>Actor $/yr</th></tr></thead><tbody>`;
+    let h = `<table class="data"><thead><tr><th>Q</th><th>FPV (prev)</th><th>Target</th><th>Service FIL/d</th><th>Orch FIL/d</th><th>Orch $/yr</th></tr></thead><tbody>`;
     rows.forEach(r=>{
       h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${r.measuredPrev==null?'—':fmtUSD(r.measuredPrev)}</td><td>${r.target==null?'—':fmtUSD(r.target)}</td><td>${fmtFIL(r.svcFil)}</td><td>${fmtFIL(r.actorFil)}</td><td>${fmtUSD(r.actorUsdYr)}</td></tr>`;
     });
@@ -804,9 +802,9 @@ this actor    = (actor's FPV share) · service stream</div>
   function drawSplit(cur, inp){
     const bar = $("splitbar"); bar.innerHTML = "";
     const segs = [
-      { nm:"Consensus", sub:"to miners (w0)", c:"var(--consensus)", w:cur.w0, fil:cur.w0*inp.brDay },
-      { nm:"Service",   sub:"to Orchestrators (w1)", c:"var(--service)", w:cur.w1, fil:cur.svcFil },
-      { nm:"Burn",      sub:"destroyed (w_b)", c:"var(--burn)", w:cur.burn, fil:cur.burnFil }
+      { nm:"Consensus", sub:"to miners (w1)", c:"var(--consensus)", w:cur.w0, fil:cur.w0*inp.brDay },
+      { nm:"Service",   sub:"to Orchestrators (w2)", c:"var(--service)", w:cur.w1, fil:cur.svcFil },
+      { nm:"Burn",      sub:"destroyed (w0)", c:"var(--burn)", w:cur.burn, fil:cur.burnFil }
     ];
     segs.forEach(s=>{
       const d = document.createElement("div");
@@ -859,7 +857,6 @@ this actor    = (actor's FPV share) · service stream</div>
 
     // value labels
     $("v_price").textContent = "$" + inp.price.toFixed(2);
-    $("v_br").textContent = inp.brDay.toLocaleString() + " FIL/d";
     $("v_q").textContent = "Q" + inp.qShown;
     $("v_growth").textContent = "+" + (inp.growth*100).toFixed(0) + "% / quarter";
     $("v_share").textContent = (inp.share*100).toFixed(0) + "%";
@@ -891,7 +888,7 @@ this actor    = (actor's FPV share) · service stream</div>
   }
 
   // ---- wire up ----
-  ["price","br","q","growth","share","cap","rate","fpv"].forEach(id => {
+  ["price","q","growth","share","cap","rate","fpv"].forEach(id => {
     $(id).addEventListener("input", render);
   });
   // revenue mode toggle
@@ -911,7 +908,7 @@ this actor    = (actor's FPV share) · service stream</div>
     $("storagefields").classList.add("hidden");
     $("directfields").classList.add("hidden");
     $("examplenote").style.display = "";
-    $("br").value = 50000; $("price").value = 1; $("share").value = 100;
+    $("price").value = 1; $("share").value = 100;
     render();
   });
   // capacity unit toggle
