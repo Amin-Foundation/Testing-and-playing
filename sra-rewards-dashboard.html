@@ -13,7 +13,7 @@
     --hair:        #e2e7ee;
     --hair-strong: #cfd6e0;
 
-    --service:     #2a78d6;   /* w1  */
+    --service:     #2a78d6;   /* w2 (service) */
     --service-soft:#dbe9fb;
     --consensus:   #8792a3;   /* w0  */
     --consensus-soft:#e7eaef;
@@ -343,8 +343,8 @@
       <div class="cgroup">
         <h3>Timeline</h3>
         <div class="field">
-          <label>Quarter shown <span class="val" id="v_q">Q4</span></label>
-          <input type="range" id="q" min="1" max="13" step="1" value="4">
+          <label>Quarter shown <span class="val" id="v_q">Q2</span></label>
+          <input type="range" id="q" min="1" max="13" step="1" value="2">
           <p class="hint">Q1 is the ungated bootstrap. From Q2 on, w2 steps up only when the gate passes.</p>
         </div>
       </div>
@@ -397,9 +397,9 @@
       <div class="cgroup">
         <h3>This Orchestrator</h3>
         <div class="field">
-          <label>Share of network service volume <span class="val" id="v_share">100%</span></label>
-          <input type="range" id="share" min="1" max="100" step="1" value="100">
-          <p class="hint">Phase 1 has a single Orchestrator (100%). Phase 2 splits w2 by each Orchestrator's FPV share.</p>
+          <label>Number of Orchestrators <span class="val" id="v_norch">1</span></label>
+          <input type="range" id="norch" min="1" max="20" step="1" value="1">
+          <p class="hint">Phase 1 launches with a single Orchestrator. Phase 2 splits the service stream w2 among all registered Orchestrators (proportional to FPV in the FIP; modeled here as an equal split, so the payout shown is per Orchestrator).</p>
         </div>
       </div>
 
@@ -502,7 +502,7 @@
           <h2>Your Orchestrator's reward stream</h2>
           <button class="btn-ghost tabtoggle" id="tbtn_r" type="button">Table</button>
         </div>
-        <p class="csub">Daily FIL to your Orchestrator across the timeline, at the current FIL price and volume share.
+        <p class="csub">Daily FIL to your Orchestrator across the timeline, at the current FIL price and Orchestrator count.
           Hover any quarter for detail.</p>
         <div class="chartlegend">
           <span class="li"><span class="ln" style="background:var(--service)"></span>Your Orchestrator · FIL/day</span>
@@ -559,9 +559,11 @@ ComputeTarget(w2) = 3,500 · 2.7^steps,  steps = (w2 − 10%) / 5%,  clamped 0�
 
           <h4>Rewards</h4>
           <div class="eq">service stream   = w2 · block_reward_per_day
-this Orchestrator = (its FPV share) · service stream</div>
-          <p>In Phase 1 the single Orchestrator's share is 100%. In Phase 2, w2 is divided among Orchestrators in
-            proportion to their FPV (the SRA's <code>SplitRule</code>, written via <code>SetShares</code>). A failed
+this Orchestrator = service stream / number of Orchestrators</div>
+          <p>The FIP divides w2 among Orchestrators <b>in proportion to their FPV</b> (the SRA's <code>SplitRule</code>,
+            written via <code>SetShares</code>). This tool models an <b>equal split</b> across the chosen number of
+            Orchestrators, so the headline is a representative per-Orchestrator payout (exact at N = 1, the Phase-1
+            launch). A failed
             per-Orchestrator send burns that share — it is never held or clawed back — and the registry is bounded by
             <code>MAX_RECIPIENTS</code>.</p>
 
@@ -640,7 +642,8 @@ this Orchestrator = (its FPV share) · service stream</div>
     const brDay  = BR_PER_DAY;
     const qShown = +$("q").value;
     const growth = +$("growth").value / 100;
-    const share  = +$("share").value / 100;
+    const nOrch  = Math.max(1, Math.round(+$("norch").value));
+    const share  = 1 / nOrch;                        // equal split of the service stream
     // Q1 FPV base
     let fpvBase;
     if (state.revmode === "storage"){
@@ -651,7 +654,7 @@ this Orchestrator = (its FPV share) · service stream</div>
     } else {
       fpvBase = +$("fpv").value;
     }
-    return { price, brDay, qShown, growth, share, fpvBase };
+    return { price, brDay, qShown, growth, nOrch, share, fpvBase };
   }
   // Published Fil One deal-book FPV from the Solstice Decisions deck (USD/quarter), flat after Q4.
   const EX_FPV = [1800, 5800, 11200, 17000];
@@ -872,7 +875,7 @@ this Orchestrator = (its FPV share) · service stream</div>
     const pass = cur.gate;
     const p = $("g_pill");
     p.className = "pill " + (pass ? "pass" : "fail");
-    p.innerHTML = `<span class="dot"></span>${pass ? "GATE PASSED · w1 stepped +5pp" : "GATE FAILED · w1 held"}`;
+    p.innerHTML = `<span class="dot"></span>${pass ? "GATE PASSED · w2 stepped +5pp" : "GATE FAILED · w2 held"}`;
     const scaleMax = Math.max(cur.measuredPrev, cur.target) * 1.15;
     $("g_fill").style.width = clamp(cur.measuredPrev / scaleMax * 100, 0, 100) + "%";
     $("g_fill").style.background = pass ? "var(--good)" : "var(--burn)";
@@ -890,7 +893,7 @@ this Orchestrator = (its FPV share) · service stream</div>
     $("v_price").textContent = "$" + inp.price.toFixed(2);
     $("v_q").textContent = "Q" + inp.qShown;
     $("v_growth").textContent = "+" + (inp.growth*100).toFixed(0) + "% / quarter";
-    $("v_share").textContent = (inp.share*100).toFixed(0) + "%";
+    $("v_norch").textContent = inp.nOrch;
     if (state.revmode === "storage"){
       const capRaw = +$("cap").value;
       $("v_cap").textContent = capRaw.toLocaleString() + " " + state.capunit;
@@ -901,7 +904,6 @@ this Orchestrator = (its FPV share) · service stream</div>
     $("split_q").textContent = "Q" + cur.q;
 
     // HERO — what this Orchestrator earns
-    const sharePct = (inp.share*100).toFixed(0);
     const actorQtrFil = cur.actorFil * 90;                 // one quarter = 90 days
     const actorYrFil  = cur.actorFil * DAYS_PER_YEAR;
     $("hero_q").textContent = "Q" + cur.q;
@@ -909,9 +911,9 @@ this Orchestrator = (its FPV share) · service stream</div>
     $("hero_qtr").innerHTML = fmtFIL(actorQtrFil) + ' <small>FIL</small>';
     $("hero_yr").innerHTML  = fmtFIL(actorYrFil) + ' <small>FIL</small>';
     $("hero_usd").textContent = fmtUSD(cur.actorUsdYr);
-    $("hero_ctx").innerHTML = (inp.share >= 1
+    $("hero_ctx").innerHTML = (inp.nOrch === 1
         ? `you are the sole Orchestrator — <b>all</b> of the <b>${fmtFIL(cur.svcFil)} FIL/day</b> service stream`
-        : `your <b>${sharePct}%</b> share of the <b>${fmtFIL(cur.svcFil)} FIL/day</b> service stream`)
+        : `an equal split among <b>${inp.nOrch} Orchestrators</b> of the <b>${fmtFIL(cur.svcFil)} FIL/day</b> service stream`)
       + ` (w2 = <b>${pctNum(cur.w1)}%</b> of the block reward). Numbers are protocol-native FIL; USD at $${inp.price.toFixed(2)}/FIL.`;
 
     // supporting KPIs
@@ -931,7 +933,7 @@ this Orchestrator = (its FPV share) · service stream</div>
   }
 
   // ---- wire up ----
-  ["price","q","growth","share","cap","rate","fpv"].forEach(id => {
+  ["price","q","growth","norch","cap","rate","fpv"].forEach(id => {
     $(id).addEventListener("input", render);
   });
   // revenue mode toggle
@@ -951,7 +953,7 @@ this Orchestrator = (its FPV share) · service stream</div>
     $("storagefields").classList.add("hidden");
     $("directfields").classList.add("hidden");
     $("examplenote").style.display = "";
-    $("price").value = 1; $("share").value = 100;
+    $("price").value = 1; $("norch").value = 1;      // sole Phase-1 Orchestrator
     render();
   });
   // capacity unit toggle
