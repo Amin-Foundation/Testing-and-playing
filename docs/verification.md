@@ -54,38 +54,6 @@ One inversion from the allocator program, and it is deliberate: allocator pathwa
 3. Governance decision.
 4. On-chain action subject to `SRA_CANCEL_HOLD`.
 
-## 6.5 Verification paths (on- and off-chain)
-
-These are the integrity guidelines referenced in [6.1](#61-binding-declarations-and-verification).
-
-### 6.5.1 On-chain evidence path
-
-Where settlement events, payer wallet history, and any declared service-contract metadata resolve the question. No orchestrator action is required, and the conclusion cites the events and blocks used.
-
-| Check | What it detects | How |
-| :-- | :-- | :-- |
-| FPV recomputation & reconciliation | misreported FPV | Re-derive FPV_i(Q) from public Filecoin Pay settlement events (`RailSettled` + reconstructed one-time payments) scoped to the orchestrator's registered (payer, operator) pairs; compare to the posted figure. |
-| Uniqueness & overlap scan | double-attribution, collisions | Check the registry against on-chain rails; flag any (payer, operator) pair bound twice or claimed by two orchestrators. |
-| Circular-flow / wash-trade graph analysis | wash trading | Trace payer → payee flows on the rails; flag funds round-tripping back to the payer, operator, or related wallets, the same value settling repeatedly, and quarter-end spikes timed to the gate. |
-| Funding-source & common-control clustering | self-dealing | Trace who funds the declared payer wallets; cluster payer / operator / orchestrator / SP-payee addresses; flag common control or "clients" funded by the orchestrator's own treasury. |
-| Volume-vs-activity cross-check | fabricated demand | Compare settled volume to real on-chain service for the same clients (sectors onboarded, PDP proofs, retrievals); payment with no corresponding storage or retrieval is a red flag. |
-| Rail & asset scope validation | volume inflation via out-of-scope rails/assets | Confirm settlements use admitted Filecoin Pay contracts and admitted stablecoins, and that FIL volume converts at the correct 30-day TWAP; discard out-of-scope volume. |
-| Share & payout verification | mis-split or payout error | Recompute `SplitRule` over the bound volumes; confirm the `SetShares` map and the f02 payouts match. |
-
-### 6.5.2 Off-chain evidence path
-
-Where a trigger fires and public data cannot resolve it, SRA Governance requests evidence through a public issue. Acceptable evidence, in increasing strength: business records showing the engagement; client confirmation through a verifiable channel; a signed payer-wallet attestation naming the orchestrator.
-
-Documentation must show genuine separation between the parties whose relationship is in question.
-
-### 6.5.3 Process
-
-1. Trigger logged as a public issue in this repository.
-2. The orchestrator responds within the response window (72 hours).
-3. Interim freeze where funds or the gate are at live risk.
-4. Decision: reinstate, reassign a binding, or remove.
-5. On-chain actions run through the standard registry-change flow under `SRA_CANCEL_HOLD` and are recorded, with rationale, in the issue.
-
 ---
 
 ← Previous: [5. Orchestrator Operational Guidelines](orchestrator-guidelines.md) · [Back to README](../README.md) · Next: [7. Parameters](parameters.md) →
