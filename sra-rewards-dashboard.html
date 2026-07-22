@@ -194,6 +194,16 @@
   .hstat .hv { font-size: 20px; font-weight: 680; letter-spacing: -.01em; font-variant-numeric: tabular-nums; line-height: 1; }
   .hstat .hv small { font-size: 12px; color: var(--ink-2); font-weight: 500; }
 
+  /* SP net-position banner (the headline story) */
+  .netbanner { display: flex; align-items: center; gap: 16px; padding: 15px 20px; border-radius: var(--r); border: 1px solid var(--hair); box-shadow: var(--shadow); font-size: 14px; color: var(--ink-2); flex-wrap: wrap; }
+  .netbanner.pos { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 30%, var(--hair)); }
+  .netbanner.neg { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 30%, var(--hair)); }
+  .netbanner b { color: var(--ink); font-weight: 680; }
+  .nb-badge { font-family: var(--mono); font-weight: 680; font-size: 15px; letter-spacing: .01em; padding: 8px 14px; border-radius: 9px; white-space: nowrap; flex: none; }
+  .netbanner.pos .nb-badge { background: var(--good); color: #fff; }
+  .netbanner.neg .nb-badge { background: var(--bad); color: #fff; }
+  .nb-text { flex: 1 1 320px; line-height: 1.45; }
+
   /* ============================================================= KPI ROW */
   .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   @media (max-width: 720px) { .kpis { grid-template-columns: repeat(3,1fr); } }
@@ -421,9 +431,9 @@
       <div class="cgroup hidden" id="grp-sp">
         <h3>This Storage Provider</h3>
         <div class="field">
-          <label>Network raw power <span class="val" id="v_netpower">5 EiB</span></label>
-          <input type="range" id="netpower" min="1" max="30" step="0.5" value="5">
-          <p class="hint">Total network raw power. Your block-reward share = your capacity ÷ network power (10× QAP is uniform, so it cancels). <b>SP-specific parameter.</b></p>
+          <label>Network raw power <span class="val" id="v_netpower">2.2 EiB</span></label>
+          <input type="range" id="netpower" min="0.5" max="20" step="0.1" value="2.2">
+          <p class="hint">Total network raw byte power — default <b>≈2.2 EiB</b>, the current network level (raw power peaked near 17 EiB in 2022). Your block-reward share = your capacity ÷ network power (10× QAP is uniform, so it cancels). <b>SP-specific parameter.</b></p>
         </div>
         <div class="field">
           <label>Capacity serving paid deals <span class="val" id="v_paid">25%</span></label>
@@ -550,6 +560,12 @@
 
       <!-- ============ STORAGE-PROVIDER CARDS ============ -->
       <div id="cards-sp" class="hidden">
+
+        <!-- NET POSITION: the headline story -->
+        <div class="netbanner pos" id="sp_net">
+          <span class="nb-badge" id="sp_net_badge">NET +$29 / day</span>
+          <span class="nb-text" id="sp_net_text"></span>
+        </div>
 
         <!-- SP SPLIT BAR: consensus vs non-consensus -->
         <section class="card">
@@ -704,6 +720,17 @@ w1(Q) = 1 − α_avg(Q):  95% → 50% floor over ~9 quarters (a fixed ramp)</div
           <p>The headline is total USD/day (block rewards converted at the current FIL price). The mix chart shows the
             transition: block rewards shrink on the w1 ramp while deal revenue grows — an SP stays whole only by
             replacing block-reward income with real demand.</p>
+
+          <h4>4. Net vs the status quo (the headline)</h4>
+          <div class="eq">block reward given up = (1 − w1) · block_reward · your-power-share · FIL price
+net vs today          = client deal revenue − block reward given up</div>
+          <p>Pre-Solstice, block reward went entirely to miners; Solstice hands (1 − w1) of it to the service economy
+            or burn. That reduction is the SP's "loss." The net banner compares it head-to-head with the new deal
+            revenue: whenever an SP earns more from paid deals than it gives up to the split, it comes out
+            <b>ahead of today</b>. Because block reward per TiB is small relative to paid-storage rates, even a modest
+            paid-deal book more than offsets the split — which is the FIP's intended outcome. (Simplification: the loss
+            is measured against a same-power baseline; a CC-heavy SP's share actually rises as its sectors move to 10×
+            QAP, so this is conservative.)</p>
 
           <h4>Pledge (context)</h4>
           <p>The initial-pledge <i>formula</i> is unchanged; only its input changes. With 10× QAP, pledge per raw byte
@@ -1025,7 +1052,10 @@ w1(Q) = 1 − α_avg(Q):  95% → 50% floor over ~9 quarters (a fixed ramp)</div
       const blockFil = wCons * inp.brDay * shareOfPower;    // FIL/day to this SP
       const blockUsd = blockFil * inp.price;
       const dealUsd  = baseMonthlyUsd * 12 / DAYS_PER_YEAR * Math.pow(1 + inp.growth, r.q - 1);
-      return { q: r.q, wCons, blockFil, blockUsd, dealUsd, totUsd: blockUsd + dealUsd };
+      // Block reward given up to the split vs a pre-Solstice baseline (all block reward to miners, w1=1)
+      const lossUsd  = (1 - wCons) * inp.brDay * shareOfPower * inp.price;
+      const netUsd   = dealUsd - lossUsd;                   // net vs status quo
+      return { q: r.q, wCons, blockFil, blockUsd, dealUsd, totUsd: blockUsd + dealUsd, lossUsd, netUsd };
     });
   }
 
@@ -1122,8 +1152,8 @@ w1(Q) = 1 − α_avg(Q):  95% → 50% floor over ~9 quarters (a fixed ramp)</div
   }
   function buildTableSP(spRows){
     const sel = +$("q").value;
-    let h = `<table class="data"><thead><tr><th>Q</th><th>Block $/d</th><th>Deal $/d</th><th>Total $/d</th><th>Total $/yr</th></tr></thead><tbody>`;
-    spRows.forEach(r=>{ h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${fmtUSD(r.blockUsd)}</td><td>${fmtUSD(r.dealUsd)}</td><td>${fmtUSD(r.totUsd)}</td><td>${fmtUSD(r.totUsd*DAYS_PER_YEAR)}</td></tr>`; });
+    let h = `<table class="data"><thead><tr><th>Q</th><th>Block $/d</th><th>Deal $/d</th><th>Given up $/d</th><th>Net vs today $/d</th><th>Total $/yr</th></tr></thead><tbody>`;
+    spRows.forEach(r=>{ h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${fmtUSD(r.blockUsd)}</td><td>${fmtUSD(r.dealUsd)}</td><td>−${fmtUSD(r.lossUsd)}</td><td>${r.netUsd>=0?'+':'−'}${fmtUSD(Math.abs(r.netUsd))}</td><td>${fmtUSD(r.totUsd*DAYS_PER_YEAR)}</td></tr>`; });
     return h + `</tbody></table>`;
   }
 
@@ -1137,9 +1167,9 @@ w1(Q) = 1 − α_avg(Q):  95% → 50% floor over ~9 quarters (a fixed ramp)</div
       who: "Your Orchestrator earns"
     },
     sp: {
-      tag: "Solstice · Storage Provider Revenue",
+      tag: "Solstice · Storage Provider Rewards",
       h1: "What could Storage Providers earn under the new operating model?",
-      lede: `Solstice pays <b>Storage Providers</b> through two channels: a <b>declining share of block rewards</b> (the consensus stream w1, 95% → 50%) and growing <b>client deal revenue</b>. Set a scenario to see how an SP's revenue shifts from block rewards to real demand.`,
+      lede: `Solstice pays <b>Storage Providers</b> through two channels: a <b>share of block rewards</b> (the consensus stream w1, 95% → 50%) and an <b>increasing client deal revenue share</b>. Set a scenario to see how an SP's revenue shifts from block rewards to client demand.`,
       op: `Every sector gets <b>10× QAP</b> uniformly (Fil+ is retired), so all PoRep power is equal at L1. An SP's direct block-reward income falls by the non-consensus share (1 − w1); those who serve paying clients <b>recover it through deal revenue</b> — those who don't see a permanent reduction, by design.`,
       who: "Your Storage Provider earns"
     }
@@ -1241,6 +1271,13 @@ w1(Q) = 1 − α_avg(Q):  95% → 50% floor over ~9 quarters (a fixed ramp)</div
     $("k_burnlab").textContent = "Client deal revenue";
     $("k_burn").innerHTML = fmtUSD(sc.dealUsd*DAYS_PER_YEAR) + '<span class="kunit">/yr</span>';
     $("k_burnsub").textContent = (inp.paidPct*100).toFixed(0) + "% paid · $" + inp.rate.toFixed(2) + "/TiB/mo";
+    // NET vs pre-Solstice status quo — the headline story
+    const positive = sc.netUsd >= 0;
+    $("sp_net").className = "netbanner " + (positive ? "pos" : "neg");
+    $("sp_net_badge").textContent = "NET " + (positive ? "+" : "−") + fmtUSD(Math.abs(sc.netUsd)) + " / day";
+    $("sp_net_text").innerHTML = positive
+      ? `At Q${sc.q}, your new client deal revenue (<b>+${fmtUSD(sc.dealUsd)}/day</b>) <b>outweighs</b> the block reward you give up to the split (<b>−${fmtUSD(sc.lossUsd)}/day</b>) — a net <b>+${fmtUSD(sc.netUsd)}/day</b> (≈ ${fmtUSD(sc.netUsd*DAYS_PER_YEAR)}/yr) vs. today. Serving paid clients more than offsets the block-reward split.`
+      : `At Q${sc.q}, your client deal revenue (<b>+${fmtUSD(sc.dealUsd)}/day</b>) does <b>not yet cover</b> the block reward given up to the split (<b>−${fmtUSD(sc.lossUsd)}/day</b>) — a net <b>−${fmtUSD(Math.abs(sc.netUsd))}/day</b> vs. today. Grow paid demand (or raise the deal rate) to get ahead.`;
     drawSpSplit(sc, inp); drawSpShare(spRows); drawSpMix(spRows);
     $("tblwrap_sc").innerHTML = buildTableSC(spRows);
     $("tblwrap_sp").innerHTML = buildTableSP(spRows);
