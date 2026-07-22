@@ -354,9 +354,9 @@
       <div class="cgroup">
         <h3>Network</h3>
         <div class="field">
-          <label>FIL price <span class="val" id="v_price">$1.00</span></label>
-          <input type="range" id="price" min="0.5" max="30" step="0.5" value="1">
-          <p class="hint">Only scales the USD value of FIL rewards. The FIP calibrates the gate targets at FIL = $1.</p>
+          <label>FIL price <span class="val" id="v_price">$0.77</span></label>
+          <input type="range" id="price" min="0.1" max="30" step="0.01" value="0.77">
+          <p class="hint">Defaults to the recent daily-average FIL price (≈ $0.77, Jul 2026) for a sense of magnitude — a snapshot, not a live feed; adjust freely. Only scales the USD value of FIL rewards; the gate targets are USD-denominated (calibrated at FIL = $1), so this never moves them.</p>
         </div>
         <div class="field">
           <label>Block reward, network total <span class="val">50,000 FIL/d</span></label>
