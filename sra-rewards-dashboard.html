@@ -354,9 +354,10 @@
       <div class="cgroup">
         <h3>Network</h3>
         <div class="field">
-          <label>FIL price <span class="val" id="v_price">$1.00</span></label>
-          <input type="range" id="price" min="0.5" max="30" step="0.5" value="1">
-          <p class="hint">Only scales the USD value of FIL rewards. The FIP calibrates the gate targets at FIL = $1.</p>
+          <label>FIL price <span class="val" id="v_price">$0.77</span></label>
+          <input type="range" id="price" min="0.1" max="30" step="0.01" value="0.77">
+          <p class="hint">Baseline = the average FIL price over the last 24h, fetched when the dashboard opens (for magnitude, not real-time tracking); adjust freely. Only scales the USD value of FIL rewards; the gate targets are USD-denominated (calibrated at FIL = $1), so this never moves them.</p>
+          <p class="hint" id="price_src" style="margin-top:6px;color:var(--service);">Fetching 24h-average price…</p>
         </div>
         <div class="field">
           <label>Block reward, network total <span class="val">50,000 FIL/d</span></label>
@@ -1343,5 +1344,45 @@ net vs today          = client deal revenue − block reward given up</div>
   });
 
   render();
+
+  // ---- live 24h-average FIL price ----
+  // Fetched client-side on open. Works on a normal host (e.g. GitHub Pages);
+  // the claude.ai Artifact sandbox blocks external requests, so it falls back
+  // to the snapshot default. Purely for magnitude — never blocks the UI.
+  (function initLivePrice(){
+    const note = $("price_src");
+    const FALLBACK = 0.77;
+    const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+    async function tryFetch(url, pick){
+      const r = await withTimeout(fetch(url, { mode: "cors" }), 6000);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return pick(await r.json());
+    }
+    // Ordered sources, each keyless + CORS-enabled; prefer true 24h averages.
+    const sources = [
+      { name: "Binance 24h avg", url: "https://api.binance.com/api/v3/ticker/24hr?symbol=FILUSDT",
+        pick: j => parseFloat(j.weightedAvgPrice) },
+      { name: "CoinGecko 24h avg", url: "https://api.coingecko.com/api/v3/coins/filecoin/market_chart?vs_currency=usd&days=1",
+        pick: j => { const a = (j.prices || []).map(p => p[1]).filter(x => x > 0); return a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN; } },
+      { name: "Coinbase spot", url: "https://api.coinbase.com/v2/prices/FIL-USD/spot",
+        pick: j => parseFloat(j.data && j.data.amount) }
+    ];
+    (async () => {
+      for (const s of sources){
+        try {
+          const price = await tryFetch(s.url, s.pick);
+          if (isFinite(price) && price > 0){
+            if ($("price").value === String(FALLBACK)){       // don't override a user who already adjusted
+              $("price").value = clamp(price, 0.1, 30).toFixed(2);
+              render();
+            }
+            if (note) note.textContent = `Live baseline: ${s.name} ≈ $${price.toFixed(3)} (opened just now).`;
+            return;
+          }
+        } catch (e) { /* try next source */ }
+      }
+      if (note){ note.style.color = "var(--ink-muted)"; note.textContent = `Live price unavailable here — using ~$${FALLBACK.toFixed(2)} snapshot. (Live fetch works on the hosted site.)`; }
+    })();
+  })();
 })();
 </script>
