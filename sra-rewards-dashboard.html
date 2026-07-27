@@ -204,6 +204,17 @@
   .netbanner.neg .nb-badge { background: var(--bad); color: #fff; }
   .nb-text { flex: 1 1 320px; line-height: 1.45; }
 
+  /* card-wrapper spacing (per view) */
+  #cards-orch, #cards-sp { display: flex; flex-direction: column; gap: 22px; }
+
+  /* SP subsidy-leverage banner (service-stream recycling) */
+  .flowbanner { display: flex; align-items: center; gap: 16px; padding: 15px 20px; border-radius: var(--r); border: 1px solid color-mix(in srgb, var(--service) 30%, var(--hair)); background: var(--service-soft); box-shadow: var(--shadow); font-size: 14px; color: var(--ink-2); flex-wrap: wrap; }
+  .flowbanner b { color: var(--ink); font-weight: 680; }
+  .flowbanner .nb-badge { background: var(--service); color: #fff; }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+  .flow .step { background: var(--surface); border: 1px solid var(--hair); border-radius: 7px; padding: 5px 10px; white-space: nowrap; }
+  .flow .arw { color: var(--service); font-weight: 700; }
+
   /* ============================================================= KPI ROW */
   .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   @media (max-width: 720px) { .kpis { grid-template-columns: repeat(3,1fr); } }
@@ -562,6 +573,21 @@
       <!-- ============ STORAGE-PROVIDER CARDS ============ -->
       <div id="cards-sp" class="hidden">
 
+        <!-- SUBSIDY LEVERAGE: how diverted block reward recycles to SPs -->
+        <div class="flowbanner" id="sp_lev">
+          <span class="nb-badge" id="sp_lev_badge">≈ 29×</span>
+          <div style="flex:1 1 320px;">
+            <span class="nb-text" id="sp_lev_text"></span>
+            <div class="flow">
+              <span class="step">1 FIL diverted from block rewards</span>
+              <span class="arw">→</span>
+              <span class="step">service stream · Orchestrators subsidise demand</span>
+              <span class="arw">→</span>
+              <span class="step" id="sp_lev_end">≈ 29 FIL client deal revenue to SPs</span>
+            </div>
+          </div>
+        </div>
+
         <!-- NET POSITION: the headline story -->
         <div class="netbanner pos" id="sp_net">
           <span class="nb-badge" id="sp_net_badge">NET +$29 / day</span>
@@ -733,6 +759,16 @@ net vs today          = client deal revenue − block reward given up</div>
             is measured against a same-power baseline; a CC-heavy SP's share actually rises as its sectors move to 10×
             QAP, so this is conservative.)</p>
 
+          <h4>Subsidy leverage (service stream → SPs)</h4>
+          <div class="eq">leverage = client deal revenue ÷ block reward given up</div>
+          <p>The block reward diverted from consensus doesn't vanish for SPs: it funds the <b>service stream</b>, which
+            Orchestrators deploy into client acquisition, migrations, and subsidies that generate <b>paying demand</b>
+            SPs capture as deal payments. The leverage banner expresses this as "for every 1 FIL you give up to the
+            split, ≈ X FIL comes back as client deal revenue" in your scenario. It rises as w1 falls and paid demand
+            grows; below 1×, the diversion isn't yet paying for itself. (This is a magnitude comparison of your
+            foregone block reward against your captured deal revenue — the causal path runs through the network-wide
+            service stream, not your own sectors.)</p>
+
           <h4>Pledge (context)</h4>
           <p>The initial-pledge <i>formula</i> is unchanged; only its input changes. With 10× QAP, pledge per raw byte
             scales up (more locked FIL), and expected reward scales with it, so return on pledge is roughly preserved —
@@ -793,6 +829,7 @@ net vs today          = client deal revenue − block reward given up</div>
   }
   function pctNum(x){ const r = Math.round(x * 1000) / 10; return Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1); }
   function fmtPct(x){ return pctNum(x) + "%"; }
+  function fmtLev(x){ if (!isFinite(x) || x <= 0) return "0×"; if (x >= 100) return Math.round(x).toLocaleString() + "×"; if (x >= 10) return x.toFixed(0) + "×"; return x.toFixed(1) + "×"; }
   function fmtFIL(v){
     if (v >= 1e6) return (v/1e6).toFixed(2) + "M";
     if (v >= 1000) return Math.round(v).toLocaleString();
@@ -1056,7 +1093,8 @@ net vs today          = client deal revenue − block reward given up</div>
       // Block reward given up to the split vs a pre-Solstice baseline (all block reward to miners, w1=1)
       const lossUsd  = (1 - wCons) * inp.brDay * shareOfPower * inp.price;
       const netUsd   = dealUsd - lossUsd;                   // net vs status quo
-      return { q: r.q, wCons, blockFil, blockUsd, dealUsd, totUsd: blockUsd + dealUsd, lossUsd, netUsd };
+      const leverage = lossUsd > 0 ? dealUsd / lossUsd : 0; // deal revenue returned per FIL given up
+      return { q: r.q, wCons, blockFil, blockUsd, dealUsd, totUsd: blockUsd + dealUsd, lossUsd, netUsd, leverage };
     });
   }
 
@@ -1153,8 +1191,8 @@ net vs today          = client deal revenue − block reward given up</div>
   }
   function buildTableSP(spRows){
     const sel = +$("q").value;
-    let h = `<table class="data"><thead><tr><th>Q</th><th>Block $/d</th><th>Deal $/d</th><th>Given up $/d</th><th>Net vs today $/d</th><th>Total $/yr</th></tr></thead><tbody>`;
-    spRows.forEach(r=>{ h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${fmtUSD(r.blockUsd)}</td><td>${fmtUSD(r.dealUsd)}</td><td>−${fmtUSD(r.lossUsd)}</td><td>${r.netUsd>=0?'+':'−'}${fmtUSD(Math.abs(r.netUsd))}</td><td>${fmtUSD(r.totUsd*DAYS_PER_YEAR)}</td></tr>`; });
+    let h = `<table class="data"><thead><tr><th>Q</th><th>Block $/d</th><th>Deal $/d</th><th>Given up $/d</th><th>Leverage</th><th>Net vs today $/d</th><th>Total $/yr</th></tr></thead><tbody>`;
+    spRows.forEach(r=>{ h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${fmtUSD(r.blockUsd)}</td><td>${fmtUSD(r.dealUsd)}</td><td>−${fmtUSD(r.lossUsd)}</td><td>${fmtLev(r.leverage)}</td><td>${r.netUsd>=0?'+':'−'}${fmtUSD(Math.abs(r.netUsd))}</td><td>${fmtUSD(r.totUsd*DAYS_PER_YEAR)}</td></tr>`; });
     return h + `</tbody></table>`;
   }
 
@@ -1272,6 +1310,14 @@ net vs today          = client deal revenue − block reward given up</div>
     $("k_burnlab").textContent = "Client deal revenue";
     $("k_burn").innerHTML = fmtUSD(sc.dealUsd*DAYS_PER_YEAR) + '<span class="kunit">/yr</span>';
     $("k_burnsub").textContent = (inp.paidPct*100).toFixed(0) + "% paid · $" + inp.rate.toFixed(2) + "/TiB/mo";
+    // SUBSIDY LEVERAGE — how diverted block reward recycles to SPs as deal revenue
+    const lev = fmtLev(sc.leverage);
+    const levNum = lev.replace("×", "");
+    $("sp_lev_badge").textContent = "≈ " + lev;
+    $("sp_lev_end").textContent = "≈ " + levNum + " FIL client deal revenue to SPs";
+    $("sp_lev_text").innerHTML = sc.leverage >= 1
+      ? `The block reward diverted from consensus funds the service stream, which Orchestrators turn into paying demand for SPs. In your scenario, every <b>1 FIL</b> you give up to the split returns ≈ <b>${levNum} FIL</b> as client deal revenue (a <b>${lev}</b> return).`
+      : `The service stream is meant to recycle diverted block reward into SP demand. In your scenario it returns only ≈ <b>${levNum} FIL</b> per 1 FIL given up (<b>${lev}</b>) — grow paid demand (or raise the deal rate) so the subsidy more than pays for itself.`;
     // NET vs pre-Solstice status quo — the headline story
     const positive = sc.netUsd >= 0;
     $("sp_net").className = "netbanner " + (positive ? "pos" : "neg");
@@ -1342,6 +1388,11 @@ net vs today          = client deal revenue − block reward given up</div>
     document.documentElement.setAttribute("data-theme", isDark ? "light" : "dark");
     render();
   });
+
+  // Focus on Storage Providers only — Orchestrator view retained in code but its toggle is hidden.
+  state.view = "sp";
+  $("viewtoggle").style.display = "none";
+  applyView();
 
   render();
 
