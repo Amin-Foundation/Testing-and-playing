@@ -376,7 +376,7 @@
         </div>
         <div class="field">
           <label>Network raw power <span class="val" id="v_netpower">2.2 EiB</span></label>
-          <p class="hint">Standard reference — the network's current raw byte power (≈2.2 EiB). Your block-reward share = your capacity ÷ network power. Fixed, not a scenario lever.</p>
+          <p class="hint">Reference value — network raw byte power, <b>≈2.2 EiB as of Aug 2026</b>. It drifts month to month, so this is a periodic snapshot to refresh occasionally (not a live feed, and not a scenario lever). Your block-reward share = your capacity ÷ network power.</p>
         </div>
       </div>
 
@@ -699,7 +699,7 @@ this Orchestrator = service stream / number of Orchestrators</div>
           <h4>Fixed constants (not scenario levers)</h4>
           <ul>
             <li><b>Block reward</b> = 50,000 FIL/day network-wide (FIP worked-example placeholder).</li>
-            <li><b>Network raw power</b> = 2.2 EiB = 2.2 × 1,048,576 = 2,306,867 TiB (current network level; 1 EiB = 1,048,576 TiB).</li>
+            <li><b>Network raw power</b> = 2.2 EiB = 2.2 × 1,048,576 = 2,306,867 TiB (≈ level as of Aug 2026; 1 EiB = 1,048,576 TiB). A periodic reference — it drifts month to month and should be refreshed occasionally, but not every session.</li>
             <li><b>Quarter length</b> = 90 days; a year = 365 days.</li>
             <li><b>QAP</b>: every PoRep sector gets <b>10× QAP</b> uniformly (Fil+/DataCap retired). Uniform ⇒ it cancels in a power <i>share</i>, so we work in raw bytes.</li>
           </ul>
@@ -778,7 +778,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
   const TiB_PER_PiB = 1024;
   const DAYS_PER_YEAR = 365;
   const BR_PER_DAY = 50000;         // fixed network block reward (FIP placeholder), not user-adjustable
-  const NET_POWER_EIB = 2.2;        // fixed network raw byte power (~current level), standard reference
+  const NET_POWER_EIB = 2.2;        // network raw byte power reference, ~2.2 EiB as of Aug 2026 — drifts monthly; refresh periodically (single source of truth for the value)
 
   const $ = id => document.getElementById(id);
   const state = { revmode: "storage", capunit: "TiB", view: "orch" };
