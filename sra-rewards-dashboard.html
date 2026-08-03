@@ -374,6 +374,10 @@
           <label>Block reward, network total <span class="val">50,000 FIL/d</span></label>
           <p class="hint">Fixed network constant — the total daily block reward minted network-wide (FIP worked-example placeholder, to verify against chain actuals). Not a lever the operating model changes.</p>
         </div>
+        <div class="field">
+          <label>Network raw power <span class="val" id="v_netpower">2.2 EiB</span></label>
+          <p class="hint">Reference value — network raw byte power, <b>≈2.2 EiB as of Aug 2026</b>. It drifts month to month, so this is a periodic snapshot to refresh occasionally (not a live feed, and not a scenario lever). Your block-reward share = your capacity ÷ network power.</p>
+        </div>
       </div>
 
       <div class="cgroup">
@@ -381,7 +385,7 @@
         <div class="field">
           <label>Quarter shown <span class="val" id="v_q">Q2</span></label>
           <input type="range" id="q" min="1" max="13" step="1" value="2">
-          <p class="hint">Q1 is the ungated bootstrap. From Q2 on, w2 steps up only when the gate passes.</p>
+          <p class="hint" id="q_hint">Each quarter the consensus weight w1 steps down 5 percentage points, from 95% at launch toward the 50% floor (~9 quarters).</p>
         </div>
       </div>
 
@@ -424,11 +428,6 @@
           </div>
         </div>
 
-        <div class="field">
-          <label>Volume growth <span class="val" id="v_growth">+45% / quarter</span></label>
-          <input type="range" id="growth" min="0" max="150" step="5" value="45">
-          <p class="hint" id="growth_hint">How fast quarterly volume compounds. Gate targets escalate ~2.7× per step.</p>
-        </div>
       </div>
 
       <div class="cgroup" id="grp-orch">
@@ -437,20 +436,6 @@
           <label>Number of Orchestrators <span class="val" id="v_norch">1</span></label>
           <input type="range" id="norch" min="1" max="20" step="1" value="1">
           <p class="hint">Phase 1 launches with a single Orchestrator. Phase 2 splits the service stream w2 among all registered Orchestrators (proportional to FPV in the FIP; modeled here as an equal split, so the payout shown is per Orchestrator).</p>
-        </div>
-      </div>
-
-      <div class="cgroup hidden" id="grp-sp">
-        <h3>This Storage Provider</h3>
-        <div class="field">
-          <label>Network raw power <span class="val" id="v_netpower">2.2 EiB</span></label>
-          <input type="range" id="netpower" min="0.5" max="20" step="0.1" value="2.2">
-          <p class="hint">Total network raw byte power — default <b>≈2.2 EiB</b>, the current network level (raw power peaked near 17 EiB in 2022). Your block-reward share = your capacity ÷ network power (10× QAP is uniform, so it cancels). <b>SP-specific parameter.</b></p>
-        </div>
-        <div class="field">
-          <label>Capacity serving paid deals <span class="val" id="v_paid">25%</span></label>
-          <input type="range" id="paid" min="0" max="100" step="5" value="25">
-          <p class="hint">Share of your capacity storing paying-client data (the rest is committed capacity earning block rewards only). Only paid data earns deal revenue. <b>SP-specific parameter.</b></p>
         </div>
       </div>
 
@@ -573,21 +558,6 @@
       <!-- ============ STORAGE-PROVIDER CARDS ============ -->
       <div id="cards-sp" class="hidden">
 
-        <!-- SUBSIDY LEVERAGE: how diverted block reward recycles to SPs -->
-        <div class="flowbanner" id="sp_lev">
-          <span class="nb-badge" id="sp_lev_badge">≈ 29×</span>
-          <div style="flex:1 1 320px;">
-            <span class="nb-text" id="sp_lev_text"></span>
-            <div class="flow">
-              <span class="step">1 FIL diverted from block rewards</span>
-              <span class="arw">→</span>
-              <span class="step">service stream · Orchestrators subsidise demand</span>
-              <span class="arw">→</span>
-              <span class="step" id="sp_lev_end">≈ 29 FIL client deal revenue to SPs</span>
-            </div>
-          </div>
-        </div>
-
         <!-- NET POSITION: the headline story -->
         <div class="netbanner pos" id="sp_net">
           <span class="nb-badge" id="sp_net_badge">NET +$29 / day</span>
@@ -631,9 +601,9 @@
             <h2>Your SP revenue mix over time</h2>
             <button class="btn-ghost tabtoggle" id="tbtn_sp" type="button">Table</button>
           </div>
-          <p class="csub">The Solstice transition for SPs: block-reward income (declining with w1) versus client
-            <b>deal revenue</b> (growing as you serve paying clients). Hover any quarter for detail. Values in USD/day
-            at the current FIL price.</p>
+          <p class="csub">The Solstice transition for SPs: block-reward income (stepping down with w1) versus steady
+            client <b>deal revenue</b>. As w1 falls, deal revenue becomes the larger share. Hover any quarter for detail.
+            Values in USD/day at the current FIL price.</p>
           <div class="chartlegend">
             <span class="li"><span class="sw" style="background:var(--consensus)"></span>Block-reward income</span>
             <span class="li"><span class="sw" style="background:var(--service)"></span>Client deal revenue</span>
@@ -720,66 +690,75 @@ this Orchestrator = service stream / number of Orchestrators</div>
       <details class="method hidden" id="method-sp">
         <summary>How this is calculated</summary>
         <div class="mbody">
-          <p>The Storage-Provider view is grounded in FIP-0118 (Solstice). SPs earn from two independent channels:
-            block rewards (protocol) and client deal payments (market).</p>
+          <p>Grounded in <b>FIP-0118 (Solstice)</b>. A Storage Provider earns from two independent channels — protocol
+            <b>block rewards</b> and market <b>client deal revenue</b>. Every figure below is computed from the four
+            scenario inputs (FIL price, quarter, your capacity, client deal rate) plus fixed constants; nothing is
+            hidden. Worked numbers use the defaults at <b>FIL = $1</b> for clean arithmetic — the live FIL price only
+            rescales the USD value of the (FIL-denominated) block-reward side.</p>
 
-          <h4>1. Block-reward income (consensus stream w1)</h4>
-          <p>All PoRep sectors receive <b>10× QAP</b> uniformly from the activation epoch, realized at onboarding
-            regardless of content (Fil+/DataCap is retired). Because the multiplier is uniform, an SP's share of the
-            consensus stream tracks its share of <b>raw power</b>:</p>
-          <div class="eq">block-reward income = w1(Q) · block_reward_per_day · (your capacity ÷ network power)
-w1(Q) = 1 − α_avg(Q):  95% → 50% floor over ~9 quarters (a fixed ramp)</div>
-          <p>Crucially, w1 is a <b>fixed schedule</b> — it does not depend on the volume gate. So every SP's direct
-            block-reward income declines by the non-consensus share (1 − w1) as the service stream ramps. This is the
-            intended shift: "all PoRep SPs see their direct block-reward income reduced by (1 − w1)."</p>
+          <h4>Fixed constants (not scenario levers)</h4>
+          <ul>
+            <li><b>Block reward</b> = 50,000 FIL/day network-wide (FIP worked-example placeholder).</li>
+            <li><b>Network raw power</b> = 2.2 EiB = 2.2 × 1,048,576 = 2,306,867 TiB (≈ level as of Aug 2026; 1 EiB = 1,048,576 TiB). A periodic reference — it drifts month to month and should be refreshed occasionally, but not every session.</li>
+            <li><b>Quarter length</b> = 90 days; a year = 365 days.</li>
+            <li><b>QAP</b>: every PoRep sector gets <b>10× QAP</b> uniformly (Fil+/DataCap retired). Uniform ⇒ it cancels in a power <i>share</i>, so we work in raw bytes.</li>
+          </ul>
 
-          <h4>2. Client deal revenue</h4>
-          <p>SPs do <b>not</b> receive service-stream payouts directly; they "recover this through deal payments." We
-            model deal revenue from the paid fraction of capacity and a per-TiB rate, growing over time as the SP wins
-            demand:</p>
-          <div class="eq">deal revenue/day = (capacity · paid%) · rate ($/TiB/mo) · 12/365 · (1 + growth)^(Q−1)</div>
-          <p>Only paid data earns deal revenue; committed capacity earns block rewards only. The FIP's thesis: "SPs who
-            serve clients recover [the loss] through deal payments; SPs who do not see a permanent reduction (the
-            intended outcome)."</p>
+          <h4>Step 1 — Consensus weight w1 for the quarter</h4>
+          <p>The consensus stream (block reward to SPs/miners) declines from 95% to a 50% floor. The FIP ramp is
+            continuous; we show the <b>clean 5-percentage-point level</b> it holds each quarter:</p>
+          <div class="eq">w1(Q) = max(50%, 95% − 5% × (Q − 1))
+Q1 95% · Q2 90% · Q3 85% · Q4 80% · Q5 75% · … · Q9 55% · Q10+ 50%</div>
+          <p>w1 is a <b>fixed schedule</b> — it does <i>not</i> depend on the volume gate or on how the service stream performs.</p>
 
-          <h4>3. Total &amp; the crossover</h4>
-          <div class="eq">total SP revenue = block-reward income + client deal revenue</div>
-          <p>The headline is total USD/day (block rewards converted at the current FIL price). The mix chart shows the
-            transition: block rewards shrink on the w1 ramp while deal revenue grows — an SP stays whole only by
-            replacing block-reward income with real demand.</p>
+          <h4>Step 2 — Your share of network power</h4>
+          <div class="eq">power share = your capacity (TiB) ÷ network power (TiB)
+example: 500 ÷ 2,306,867 = 0.0002168  (0.0217%)</div>
 
-          <h4>4. Net vs the status quo (the headline)</h4>
-          <div class="eq">block reward given up = (1 − w1) · block_reward · your-power-share · FIL price
-net vs today          = client deal revenue − block reward given up</div>
-          <p>Pre-Solstice, block reward went entirely to miners; Solstice hands (1 − w1) of it to the service economy
-            or burn. That reduction is the SP's "loss." The net banner compares it head-to-head with the new deal
-            revenue: whenever an SP earns more from paid deals than it gives up to the split, it comes out
-            <b>ahead of today</b>. Because block reward per TiB is small relative to paid-storage rates, even a modest
-            paid-deal book more than offsets the split — which is the FIP's intended outcome. (Simplification: the loss
-            is measured against a same-power baseline; a CC-heavy SP's share actually rises as its sectors move to 10×
-            QAP, so this is conservative.)</p>
+          <h4>Step 3 — Block-reward income</h4>
+          <div class="eq">block income (FIL/day) = w1(Q) · 50,000 · power share
+example Q2: 0.90 · 50,000 · 0.0002168 = 9.76 FIL/day
+block income (USD/day) = FIL/day · FIL price   → 9.76 · $1 = $9.76/day</div>
 
-          <h4>Subsidy leverage (service stream → SPs)</h4>
-          <div class="eq">leverage = client deal revenue ÷ block reward given up</div>
-          <p>The block reward diverted from consensus doesn't vanish for SPs: it funds the <b>service stream</b>, which
-            Orchestrators deploy into client acquisition, migrations, and subsidies that generate <b>paying demand</b>
-            SPs capture as deal payments. The leverage banner expresses this as "for every 1 FIL you give up to the
-            split, ≈ X FIL comes back as client deal revenue" in your scenario. It rises as w1 falls and paid demand
-            grows; below 1×, the diversion isn't yet paying for itself. (This is a magnitude comparison of your
-            foregone block reward against your captured deal revenue — the causal path runs through the network-wide
-            service stream, not your own sectors.)</p>
+          <h4>Step 4 — Client deal revenue</h4>
+          <p>SPs don't receive service-stream payouts directly — they "recover this through deal payments" from clients
+            (the service stream funds Orchestrators, who generate that demand). All your capacity is assumed to serve
+            paid deals, at the client deal rate; it's held flat over time (no speculative growth):</p>
+          <div class="eq">deal revenue (USD/day) = capacity (TiB) · rate ($/TiB/mo) · 12 ÷ 365
+example: 500 · $5 · 12 ÷ 365 = $82.2/day</div>
 
-          <h4>Pledge (context)</h4>
+          <h4>Step 5 — Total revenue (the hero figure)</h4>
+          <div class="eq">total (USD/day) = block income + deal revenue
+example Q2: $9.76 + $82.2 = $91.9/day   (× 365 ≈ $33.6K/yr)</div>
+
+          <h4>Step 6 — Net vs. today (the green banner)</h4>
+          <p>Pre-Solstice, SPs received 100% of block reward; Solstice diverts (1 − w1) of it to the service stream and
+            burn. That reduction is what an SP "gives up." The net compares it against the new deal revenue:</p>
+          <div class="eq">block reward given up = (1 − w1(Q)) · 50,000 · power share · FIL price
+example Q2: 0.10 · 50,000 · 0.0002168 · $1 = $1.08/day
+net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1/day</div>
+          <p>Whenever deal revenue exceeds the block reward given up, the SP is <b>ahead of today</b>. Because block
+            reward per TiB is small next to paid-storage rates, even a modest paid book more than offsets the split —
+            the FIP's intended outcome: "SPs who serve clients recover [the loss] through deal payments; SPs who do not
+            see a permanent reduction."</p>
+
+          <h4>Pledge (context, not modelled)</h4>
           <p>The initial-pledge <i>formula</i> is unchanged; only its input changes. With 10× QAP, pledge per raw byte
-            scales up (more locked FIL), and expected reward scales with it, so return on pledge is roughly preserved —
-            converging to today's verified-sector economics, already the norm for ~83% of the network. This tool models
-            revenue, not locked-capital costs.</p>
+            scales up (more locked FIL) and expected reward scales with it, so return on pledge is roughly preserved —
+            converging to today's verified-sector economics (already ~83% of the network). This tool models revenue,
+            not locked-capital costs.</p>
+
+          <h4>Simplifications (stated plainly)</h4>
+          <ul>
+            <li>w1 shown as clean 5pp quarterly levels; the FIP ramp is continuous, so mid-quarter it sits between two levels.</li>
+            <li>Deal revenue = capacity × rate, 100% paid and flat — a magnitude estimate, not a forecast of real contracts or utilisation.</li>
+            <li>The "given up" baseline assumes the same power share pre- and post-Solstice; a committed-capacity-heavy SP's share actually <i>rises</i> as its sectors become 10× QAP, so the loss shown is conservative.</li>
+            <li>Block reward (50,000 FIL/day) and network power (2.2 EiB) are fixed references — update them as the network moves.</li>
+          </ul>
 
           <p class="disclaimer">Illustrative model for community insight, not financial advice. Source: FIP-0118
-            (Solstice), irenegia-solstice draft. Block reward is held constant (50,000 FIL/day placeholder; real
-            issuance declines over time). Network power, paid-capacity share, deal rate, and growth are user
-            assumptions; the QAP multiplier, w1 ramp, and pledge treatment follow the FIP. Deal-revenue modeling is a
-            simplification of real client contracts. No wallets, keys, or funds are involved.</p>
+            (Solstice), irenegia-solstice draft. This tool reads only public protocol parameters and a public FIL
+            price — no wallets, keys, or funds are involved.</p>
         </div>
       </details>
 
@@ -799,6 +778,7 @@ net vs today          = client deal revenue − block reward given up</div>
   const TiB_PER_PiB = 1024;
   const DAYS_PER_YEAR = 365;
   const BR_PER_DAY = 50000;         // fixed network block reward (FIP placeholder), not user-adjustable
+  const NET_POWER_EIB = 2.2;        // network raw byte power reference, ~2.2 EiB as of Aug 2026 — drifts monthly; refresh periodically (single source of truth for the value)
 
   const $ = id => document.getElementById(id);
   const state = { revmode: "storage", capunit: "TiB", view: "orch" };
@@ -842,16 +822,16 @@ net vs today          = client deal revenue − block reward given up</div>
     const price  = +$("price").value;
     const brDay  = BR_PER_DAY;
     const qShown = +$("q").value;
-    const growth = +$("growth").value / 100;
-    const nOrch  = Math.max(1, Math.round(+$("norch").value));
-    const share  = 1 / nOrch;                        // equal split of the service stream
+    const growth = 0;                                // volume growth removed (deal revenue flat, non-speculative)
+    const nOrch  = $("norch") ? Math.max(1, Math.round(+$("norch").value)) : 1;  // orchestrator-only
+    const share  = 1 / nOrch;
     const rate   = +$("rate").value;                 // $/TiB/month
     const capRaw = +$("cap").value;
     const capTiB = state.capunit === "PiB" ? capRaw * TiB_PER_PiB : capRaw;
-    const netPowerEiB = +$("netpower").value;        // SP: total network raw power
-    const paidPct = +$("paid").value / 100;          // SP: fraction of capacity on paid deals
-    // Q1 FPV base (orchestrator gate driver)
-    const fpvBase = (state.revmode === "storage") ? rate * capTiB * 3 : +$("fpv").value;
+    const netPowerEiB = NET_POWER_EIB;               // fixed network raw power (standard reference)
+    const paidPct = 1;                               // 100% of capacity assumed on paid deals
+    // Q1 FPV base (orchestrator gate driver; orch view only)
+    const fpvBase = (state.revmode === "direct" && $("fpv")) ? +$("fpv").value : rate * capTiB * 3;
     return { price, brDay, qShown, growth, nOrch, share, fpvBase, rate, capTiB, netPowerEiB, paidPct };
   }
   // Published Fil One deal-book FPV from the Solstice Decisions deck (USD/quarter), flat after Q4.
@@ -1082,19 +1062,21 @@ net vs today          = client deal revenue − block reward given up</div>
   }
 
   // ---- SP metrics ----
+  // Consensus weight w1 shown as clean 5-percentage-point quarterly steps: 95% at launch (Q1),
+  // −5pp per quarter, floored at 50%. (The FIP ramp is continuous; these are the levels it steps through.)
+  function consensusW1(q){ return Math.max(0.50, Math.min(0.95, 0.95 - 0.05 * (q - 1))); }
   function spMetrics(rows, inp){
     const shareOfPower = inp.capTiB / (inp.netPowerEiB * EiB_IN_TiB);
-    const baseMonthlyUsd = inp.capTiB * inp.paidPct * inp.rate;   // Q1 paid-deal revenue $/mo
+    const dealUsdDay = inp.capTiB * inp.paidPct * inp.rate * 12 / DAYS_PER_YEAR;  // flat: capacity × rate, 100% paid
     return rows.map(r => {
-      const wCons = r.w0;                                   // consensus weight (internal w0)
+      const wCons = consensusW1(r.q);                       // clean 5pp step
       const blockFil = wCons * inp.brDay * shareOfPower;    // FIL/day to this SP
       const blockUsd = blockFil * inp.price;
-      const dealUsd  = baseMonthlyUsd * 12 / DAYS_PER_YEAR * Math.pow(1 + inp.growth, r.q - 1);
-      // Block reward given up to the split vs a pre-Solstice baseline (all block reward to miners, w1=1)
+      const dealUsd  = dealUsdDay;                          // no speculative growth
+      // Block reward given up vs a pre-Solstice baseline (all block reward to SPs/miners, w1 = 100%)
       const lossUsd  = (1 - wCons) * inp.brDay * shareOfPower * inp.price;
       const netUsd   = dealUsd - lossUsd;                   // net vs status quo
-      const leverage = lossUsd > 0 ? dealUsd / lossUsd : 0; // deal revenue returned per FIL given up
-      return { q: r.q, wCons, blockFil, blockUsd, dealUsd, totUsd: blockUsd + dealUsd, lossUsd, netUsd, leverage };
+      return { q: r.q, wCons, blockFil, blockUsd, dealUsd, totUsd: blockUsd + dealUsd, lossUsd, netUsd };
     });
   }
 
@@ -1191,8 +1173,8 @@ net vs today          = client deal revenue − block reward given up</div>
   }
   function buildTableSP(spRows){
     const sel = +$("q").value;
-    let h = `<table class="data"><thead><tr><th>Q</th><th>Block $/d</th><th>Deal $/d</th><th>Given up $/d</th><th>Leverage</th><th>Net vs today $/d</th><th>Total $/yr</th></tr></thead><tbody>`;
-    spRows.forEach(r=>{ h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${fmtUSD(r.blockUsd)}</td><td>${fmtUSD(r.dealUsd)}</td><td>−${fmtUSD(r.lossUsd)}</td><td>${fmtLev(r.leverage)}</td><td>${r.netUsd>=0?'+':'−'}${fmtUSD(Math.abs(r.netUsd))}</td><td>${fmtUSD(r.totUsd*DAYS_PER_YEAR)}</td></tr>`; });
+    let h = `<table class="data"><thead><tr><th>Q</th><th>Consensus w1</th><th>Block $/d</th><th>Deal $/d</th><th>Given up $/d</th><th>Net vs today $/d</th><th>Total $/yr</th></tr></thead><tbody>`;
+    spRows.forEach(r=>{ h += `<tr class="${r.q===sel?'sel':''}"><td>Q${r.q}</td><td>${fmtPct(r.wCons)}</td><td>${fmtUSD(r.blockUsd)}</td><td>${fmtUSD(r.dealUsd)}</td><td>−${fmtUSD(r.lossUsd)}</td><td>${r.netUsd>=0?'+':'−'}${fmtUSD(Math.abs(r.netUsd))}</td><td>${fmtUSD(r.totUsd*DAYS_PER_YEAR)}</td></tr>`; });
     return h + `</tbody></table>`;
   }
 
@@ -1220,7 +1202,6 @@ net vs today          = client deal revenue − block reward given up</div>
     $("cards-orch").classList.toggle("hidden", sp);
     $("cards-sp").classList.toggle("hidden", !sp);
     $("grp-orch").classList.toggle("hidden", sp);
-    $("grp-sp").classList.toggle("hidden", !sp);
     $("orchRevControls").classList.toggle("hidden", sp);
     $("method-orch").classList.toggle("hidden", sp);
     $("method-sp").classList.toggle("hidden", !sp);
@@ -1233,11 +1214,11 @@ net vs today          = client deal revenue − block reward given up</div>
     $("cap_hint").style.display = sp ? "" : "none";
     $("rate_label").textContent = sp ? "Client deal rate" : "Service revenue rate";
     $("rate_hint").textContent = sp
-      ? "What paying clients pay per TiB of stored data per month, via Filecoin Pay. Anchor: Fil One ≈ $4.99/TB/mo."
+      ? "What paying clients pay per TiB of stored data per month, via Filecoin Pay. All capacity is assumed to serve paid deals. Anchor: Fil One ≈ $4.99/TB/mo."
       : "On-chain deal revenue settled through Filecoin Pay, per TiB of paid storage per month. Anchor: Fil One list price ≈ $4.99/TB/mo (Jul 2026).";
-    $("growth_hint").textContent = sp
-      ? "How fast your client deal revenue compounds each quarter as you win demand."
-      : "How fast quarterly volume compounds. Gate targets escalate ~2.7× per step.";
+    $("q_hint").textContent = sp
+      ? "Each quarter the consensus weight w1 steps down 5 percentage points, from 95% at launch toward the 50% floor (~9 quarters)."
+      : "Q1 is the ungated bootstrap. From Q2 on, w2 steps up only when the gate passes.";
   }
 
   // ---- master render ----
@@ -1249,13 +1230,10 @@ net vs today          = client deal revenue − block reward given up</div>
     // shared value labels
     $("v_price").textContent = "$" + inp.price.toFixed(2);
     $("v_q").textContent = "Q" + inp.qShown;
-    $("v_growth").textContent = "+" + (inp.growth*100).toFixed(0) + "% / quarter";
-    $("v_norch").textContent = inp.nOrch;
+    if ($("v_norch")) $("v_norch").textContent = inp.nOrch;
     $("v_cap").textContent = (+$("cap").value).toLocaleString() + " " + state.capunit;
     $("v_rate").textContent = "$" + inp.rate.toFixed(2) + " /TiB/mo";
-    $("v_netpower").textContent = inp.netPowerEiB + " EiB";
-    $("v_paid").textContent = (inp.paidPct*100).toFixed(0) + "%";
-    if (state.revmode !== "storage") $("v_fpv").textContent = fmtUSDfull(+$("fpv").value);
+    if (state.revmode === "direct" && $("v_fpv")) $("v_fpv").textContent = fmtUSDfull(+$("fpv").value);
     $("hero_q").textContent = "Q" + cur.q;
 
     if (state.view === "sp") renderSp(rows, cur, inp);
@@ -1299,7 +1277,7 @@ net vs today          = client deal revenue − block reward given up</div>
     $("hl_1").textContent = "Block rewards"; $("hero_qtr").innerHTML = fmtUSD(sc.blockUsd) + ' <small>/day</small>';
     $("hl_2").textContent = "Deal revenue";  $("hero_yr").innerHTML  = fmtUSD(sc.dealUsd) + ' <small>/day</small>';
     $("hl_3").textContent = "Per year";      $("hero_usd").textContent = fmtUSD(sc.totUsd * DAYS_PER_YEAR);
-    $("hero_ctx").innerHTML = `<b>${fmtPct(blockPct)}</b> from block rewards (consensus w1 = <b>${pctNum(sc.wCons)}%</b> × your <b>${fmtFIL(sc.blockFil)} FIL/day</b> cut) and <b>${fmtPct(1-blockPct)}</b> from paid client deals. Block-reward income declines as w1 ramps 95% → 50%; deal revenue is what replaces it. USD at $${inp.price.toFixed(2)}/FIL.`;
+    $("hero_ctx").innerHTML = `<b>${fmtPct(blockPct)}</b> from block rewards (consensus w1 = <b>${pctNum(sc.wCons)}%</b> × your <b>${fmtFIL(sc.blockFil)} FIL/day</b> cut) and <b>${fmtPct(1-blockPct)}</b> from paid client deals. Block-reward income steps down as w1 falls 95% → 50%; steady client deal revenue carries the rest. USD at $${inp.price.toFixed(2)}/FIL.`;
     $("kpi1").style.setProperty('--kc','var(--consensus)'); $("kpi2").style.setProperty('--kc','var(--consensus)'); $("kpi3").style.setProperty('--kc','var(--service)');
     $("k_w1lab").textContent = "Consensus weight w1";
     $("k_w1").innerHTML = pctNum(sc.wCons) + '<span class="kunit">%</span>';
@@ -1309,15 +1287,7 @@ net vs today          = client deal revenue − block reward given up</div>
     $("k_svcsub").textContent = "≈ " + fmtFIL(sc.blockFil) + " FIL/day";
     $("k_burnlab").textContent = "Client deal revenue";
     $("k_burn").innerHTML = fmtUSD(sc.dealUsd*DAYS_PER_YEAR) + '<span class="kunit">/yr</span>';
-    $("k_burnsub").textContent = (inp.paidPct*100).toFixed(0) + "% paid · $" + inp.rate.toFixed(2) + "/TiB/mo";
-    // SUBSIDY LEVERAGE — how diverted block reward recycles to SPs as deal revenue
-    const lev = fmtLev(sc.leverage);
-    const levNum = lev.replace("×", "");
-    $("sp_lev_badge").textContent = "≈ " + lev;
-    $("sp_lev_end").textContent = "≈ " + levNum + " FIL client deal revenue to SPs";
-    $("sp_lev_text").innerHTML = sc.leverage >= 1
-      ? `The block reward diverted from consensus funds the service stream, which Orchestrators turn into paying demand for SPs. In your scenario, every <b>1 FIL</b> you give up to the split returns ≈ <b>${levNum} FIL</b> as client deal revenue (a <b>${lev}</b> return).`
-      : `The service stream is meant to recycle diverted block reward into SP demand. In your scenario it returns only ≈ <b>${levNum} FIL</b> per 1 FIL given up (<b>${lev}</b>) — grow paid demand (or raise the deal rate) so the subsidy more than pays for itself.`;
+    $("k_burnsub").textContent = "100% paid · $" + inp.rate.toFixed(2) + "/TiB/mo";
     // NET vs pre-Solstice status quo — the headline story
     const positive = sc.netUsd >= 0;
     $("sp_net").className = "netbanner " + (positive ? "pos" : "neg");
@@ -1331,8 +1301,8 @@ net vs today          = client deal revenue − block reward given up</div>
   }
 
   // ---- wire up ----
-  ["price","q","growth","norch","cap","rate","fpv","netpower","paid"].forEach(id => {
-    $(id).addEventListener("input", render);
+  ["price","q","norch","cap","rate","fpv"].forEach(id => {
+    if ($(id)) $(id).addEventListener("input", render);
   });
   // view toggle (Orchestrator ↔ Storage Provider)
   $("viewtoggle").addEventListener("click", e => {
