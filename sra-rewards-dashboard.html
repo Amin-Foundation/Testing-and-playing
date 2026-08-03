@@ -194,6 +194,19 @@
   .hstat .hv { font-size: 20px; font-weight: 680; letter-spacing: -.01em; font-variant-numeric: tabular-nums; line-height: 1; }
   .hstat .hv small { font-size: 12px; color: var(--ink-2); font-weight: 500; }
 
+  /* hero donut (revenue split) */
+  .hero-donut { display: flex; align-items: center; gap: 20px; flex: 0 1 auto; flex-wrap: wrap; }
+  .donut { width: 132px; height: 132px; flex: none; }
+  .donut circle { transition: stroke-dasharray .35s ease, stroke-dashoffset .35s ease; }
+  .donut-pct { font-family: var(--sans); font-weight: 680; font-size: 26px; letter-spacing: -.02em; fill: var(--ink); }
+  .donut-sub { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; fill: var(--ink-muted); }
+  .donut-legend { display: flex; flex-direction: column; gap: 9px; }
+  .donut-legend .dl-row { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-2); }
+  .donut-legend .dl-row .sw { width: 11px; height: 11px; border-radius: 3px; }
+  .donut-legend .dl-row b { font-family: var(--mono); font-weight: 680; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .donut-legend .dl-total { border-top: 1px solid var(--hair); padding-top: 8px; margin-top: 1px; }
+  .donut-legend .dl-total b { color: var(--ink); }
+
   /* SP net-position banner (the headline story) */
   .netbanner { display: flex; align-items: center; gap: 16px; padding: 15px 20px; border-radius: var(--r); border: 1px solid var(--hair); box-shadow: var(--shadow); font-size: 14px; color: var(--ink-2); flex-wrap: wrap; }
   .netbanner.pos { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 30%, var(--hair)); }
@@ -271,7 +284,7 @@
   .ttip {
     position: absolute; pointer-events: none; z-index: 5; background: var(--surface);
     border: 1px solid var(--hair-strong); border-radius: 9px; box-shadow: var(--shadow);
-    padding: 10px 12px; font-size: 12px; min-width: 140px; opacity: 0; transition: opacity .12s; transform: translate(-50%, -108%);
+    padding: 10px 12px; font-size: 12px; min-width: 140px; opacity: 0; transition: opacity .12s; transform: translate(-50%, 0);
   }
   .ttip .tt-h { font-family: var(--mono); font-weight: 680; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 7px; }
   .ttip .tt-r { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin: 3px 0; }
@@ -451,10 +464,24 @@
           <div class="hero-fig"><span id="hero_filday">10,000</span><span class="hero-unit" id="hero_unit">FIL / day</span></div>
           <p class="hero-ctx" id="hero_ctx">your <b>100%</b> share of the <b>10,000 FIL/day</b> service stream (w2 = <b>20%</b> of the block reward)</p>
         </div>
-        <div class="hero-stats">
+        <div class="hero-stats" id="hero-stats">
           <div class="hstat"><span class="hl" id="hl_1">This quarter</span><span class="hv" id="hero_qtr">900K <small>FIL</small></span></div>
           <div class="hstat"><span class="hl" id="hl_2">Per year</span><span class="hv" id="hero_yr">3.65M <small>FIL</small></span></div>
           <div class="hstat"><span class="hl" id="hl_3">Per year (USD)</span><span class="hv" id="hero_usd">$3.65M</span></div>
+        </div>
+        <div class="hero-donut hidden" id="hero-donut">
+          <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Revenue split: block rewards vs client deals">
+            <circle cx="60" cy="60" r="46" fill="none" stroke="var(--surface-2)" stroke-width="15"></circle>
+            <circle id="donut_block" cx="60" cy="60" r="46" fill="none" stroke="var(--consensus)" stroke-width="15" stroke-dasharray="0 999" transform="rotate(-90 60 60)"></circle>
+            <circle id="donut_deal" cx="60" cy="60" r="46" fill="none" stroke="var(--service)" stroke-width="15" stroke-dasharray="0 999" stroke-dashoffset="0" transform="rotate(-90 60 60)"></circle>
+            <text id="donut_pct" x="60" y="57" text-anchor="middle" class="donut-pct">—</text>
+            <text x="60" y="74" text-anchor="middle" class="donut-sub">from deals</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="dl-row"><span class="sw" style="background:var(--consensus)"></span>Block rewards<b id="hd_block">—</b></div>
+            <div class="dl-row"><span class="sw" style="background:var(--service)"></span>Client deal revenue<b id="hd_deal">—</b></div>
+            <div class="dl-row dl-total"><span class="sw" style="background:transparent"></span>Per year<b id="hd_yr">—</b></div>
+          </div>
         </div>
       </section>
 
@@ -567,7 +594,7 @@
         <!-- SP SPLIT BAR: consensus vs non-consensus -->
         <section class="card">
           <div class="chead">
-            <h2>Block reward to Storage Providers — <span id="sp_split_q">Q2</span></h2>
+            <h2>Share of Block rewards to SP — <span id="sp_split_q">Q2</span></h2>
           </div>
           <p class="csub">SPs earn block rewards from the <b>consensus stream (w1)</b>, shared by QAP power. Solstice
             makes every sector 10× QAP uniformly, so an SP's cut tracks its raw-power share. As w1 ramps 95% → 50%,
@@ -980,8 +1007,12 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
       cross.setAttribute("x1", x); cross.setAttribute("x2", x); cross.setAttribute("stroke-opacity", .4);
       tip.innerHTML = html(rows[i]);
       tip.style.opacity = 1;
-      tip.style.left = (x / W * rect.width) + "px";
-      tip.style.top  = (M.t + PH * 0.15 / 1) / H * rect.height + "px";
+      // keep the tooltip inside the plot: hang it just below the top edge, clamp horizontally
+      const tw = tip.offsetWidth;
+      let left = x / W * rect.width;
+      left = Math.max(tw / 2 + 6, Math.min(rect.width - tw / 2 - 6, left));
+      tip.style.left = left + "px";
+      tip.style.top  = ((M.t / H) * rect.height + 6) + "px";
     }
     function leave(){ tip.style.opacity = 0; cross.setAttribute("stroke-opacity", 0); }
     svg.addEventListener("mousemove", move);
@@ -1191,7 +1222,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
       tag: "Solstice · Storage Provider Rewards",
       h1: "What could Storage Providers earn under Solstice?",
       lede: `Solstice pays <b>Storage Providers</b> through two channels: a <b>share of block rewards</b> (the consensus stream w1, 95% → 50%) and an <b>increasing client deal revenue share</b>. Set a scenario to see how an SP's revenue shifts from block rewards to client demand.`,
-      op: `Every sector gets <b>10× QAP</b> uniformly (Fil+ is retired), so all PoRep power is equal at L1. An SP's direct block-reward income falls by the non-consensus share (1 − w1); those who serve paying clients <b>recover it through deal revenue</b> — those who don't see a permanent reduction, by design.`,
+      op: `Every sector gets <b>10× QAP</b> uniformly, so all PoRep power is equal at L1. An SP's direct block-reward income falls by the non-consensus share (1 − w1); those who serve paying clients <b>recover it through deal revenue</b> — those who don't see a permanent reduction, by design.`,
       who: "Your Storage Provider earns"
     }
   };
@@ -1242,6 +1273,8 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
 
   function renderOrch(rows, cur, inp){
     $("split_q").textContent = "Q" + cur.q;
+    $("hero-stats").classList.remove("hidden");
+    $("hero-donut").classList.add("hidden");
     $("hero_unit").textContent = "FIL / day";
     const actorQtrFil = cur.actorFil * 90, actorYrFil = cur.actorFil * DAYS_PER_YEAR;
     $("hero_filday").textContent = fmtFIL(cur.actorFil);
@@ -1278,6 +1311,19 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
     $("hl_2").textContent = "Deal revenue";  $("hero_yr").innerHTML  = fmtUSD(sc.dealUsd) + ' <small>/day</small>';
     $("hl_3").textContent = "Per year";      $("hero_usd").textContent = fmtUSD(sc.totUsd * DAYS_PER_YEAR);
     $("hero_ctx").innerHTML = `<b>${fmtPct(blockPct)}</b> from block rewards (consensus w1 = <b>${pctNum(sc.wCons)}%</b> × your <b>${fmtFIL(sc.blockFil)} FIL/day</b> cut) and <b>${fmtPct(1-blockPct)}</b> from paid client deals. Block-reward income steps down as w1 falls 95% → 50%; steady client deal revenue carries the rest. USD at $${inp.price.toFixed(2)}/FIL.`;
+    // revenue-split donut (block rewards vs client deals)
+    $("hero-stats").classList.add("hidden");
+    $("hero-donut").classList.remove("hidden");
+    const C = 2 * Math.PI * 46;
+    const bf = sc.totUsd > 0 ? sc.blockUsd / sc.totUsd : 0;
+    const df = sc.totUsd > 0 ? sc.dealUsd / sc.totUsd : 1;
+    $("donut_block").setAttribute("stroke-dasharray", `${(bf*C).toFixed(2)} ${C.toFixed(2)}`);
+    $("donut_deal").setAttribute("stroke-dasharray", `${(df*C).toFixed(2)} ${C.toFixed(2)}`);
+    $("donut_deal").setAttribute("stroke-dashoffset", `${(-bf*C).toFixed(2)}`);
+    $("donut_pct").textContent = Math.round(df*100) + "%";
+    $("hd_block").textContent = fmtUSD(sc.blockUsd) + "/d";
+    $("hd_deal").textContent = fmtUSD(sc.dealUsd) + "/d";
+    $("hd_yr").textContent = fmtUSD(sc.totUsd * DAYS_PER_YEAR);
     $("kpi1").style.setProperty('--kc','var(--consensus)'); $("kpi2").style.setProperty('--kc','var(--consensus)'); $("kpi3").style.setProperty('--kc','var(--service)');
     $("k_w1lab").textContent = "Consensus weight w1";
     $("k_w1").innerHTML = pctNum(sc.wCons) + '<span class="kunit">%</span>';
