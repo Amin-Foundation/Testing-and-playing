@@ -388,8 +388,9 @@
           <p class="hint">Fixed network constant — the total daily block reward minted network-wide (FIP worked-example placeholder, to verify against chain actuals). Not a lever the operating model changes.</p>
         </div>
         <div class="field">
-          <label>Network raw power <span class="val" id="v_netpower">2.2 EiB</span></label>
-          <p class="hint">Reference value — network raw byte power, <b>≈2.2 EiB as of Aug 2026</b>. It drifts month to month, so this is a periodic snapshot to refresh occasionally (not a live feed, and not a scenario lever). Your block-reward share = your capacity ÷ network power.</p>
+          <label>Network raw power <span class="val" id="v_netpower">1.27 EiB</span></label>
+          <p class="hint">Network raw byte power, read from chain (Storage Power Actor) and <b>auto-refreshed weekly</b> — not a scenario lever. Your block-reward share = your capacity ÷ network power.</p>
+          <p class="hint" id="netpower_src" style="margin-top:6px;color:var(--service);">Checking network power…</p>
         </div>
       </div>
 
@@ -726,7 +727,7 @@ this Orchestrator = service stream / number of Orchestrators</div>
           <h4>Fixed constants (not scenario levers)</h4>
           <ul>
             <li><b>Block reward</b> = 50,000 FIL/day network-wide (FIP worked-example placeholder).</li>
-            <li><b>Network raw power</b> = 2.2 EiB = 2.2 × 1,048,576 = 2,306,867 TiB (≈ level as of Aug 2026; 1 EiB = 1,048,576 TiB). A periodic reference — it drifts month to month and should be refreshed occasionally, but not every session.</li>
+            <li><b>Network raw power</b> ≈ 1.27 EiB = 1,331,691 TiB (1 EiB = 1,048,576 TiB). Read from chain (Storage Power Actor <code>f04</code>, <code>TotalRawBytePower</code>) and auto-refreshed weekly; ≈ QAP 12.7 EiB ÷ 10. The 1.27 EiB shown offline is the fallback.</li>
             <li><b>Quarter length</b> = 90 days; a year = 365 days.</li>
             <li><b>QAP</b>: every PoRep sector gets <b>10× QAP</b> uniformly (Fil+/DataCap retired). Uniform ⇒ it cancels in a power <i>share</i>, so we work in raw bytes.</li>
           </ul>
@@ -740,12 +741,12 @@ Q1 95% · Q2 90% · Q3 85% · Q4 80% · Q5 75% · … · Q9 55% · Q10+ 50%</div
 
           <h4>Step 2 — Your share of network power</h4>
           <div class="eq">power share = your capacity (TiB) ÷ network power (TiB)
-example: 500 ÷ 2,306,867 = 0.0002168  (0.0217%)</div>
+example: 500 ÷ 1,331,691 = 0.0003755  (0.0376%)</div>
 
           <h4>Step 3 — Block-reward income</h4>
           <div class="eq">block income (FIL/day) = w1(Q) · 50,000 · power share
-example Q2: 0.90 · 50,000 · 0.0002168 = 9.76 FIL/day
-block income (USD/day) = FIL/day · FIL price   → 9.76 · $1 = $9.76/day</div>
+example Q2: 0.90 · 50,000 · 0.0003755 = 16.9 FIL/day
+block income (USD/day) = FIL/day · FIL price   → 16.9 · $1 = $16.9/day</div>
 
           <h4>Step 4 — Client deal revenue</h4>
           <p>SPs don't receive service-stream payouts directly — they "recover this through deal payments" from clients
@@ -756,14 +757,14 @@ example: 500 · $5 · 12 ÷ 365 = $82.2/day</div>
 
           <h4>Step 5 — Total revenue (the hero figure)</h4>
           <div class="eq">total (USD/day) = block income + deal revenue
-example Q2: $9.76 + $82.2 = $91.9/day   (× 365 ≈ $33.6K/yr)</div>
+example Q2: $16.9 + $82.2 = $99.1/day   (× 365 ≈ $36.2K/yr)</div>
 
           <h4>Step 6 — Net vs. today (the green banner)</h4>
           <p>Pre-Solstice, SPs received 100% of block reward; Solstice diverts (1 − w1) of it to the service stream and
             burn. That reduction is what an SP "gives up." The net compares it against the new deal revenue:</p>
           <div class="eq">block reward given up = (1 − w1(Q)) · 50,000 · power share · FIL price
-example Q2: 0.10 · 50,000 · 0.0002168 · $1 = $1.08/day
-net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1/day</div>
+example Q2: 0.10 · 50,000 · 0.0003755 · $1 = $1.88/day
+net vs today = deal revenue − block reward given up = $82.2 − $1.88 = +$80.3/day</div>
           <p>Whenever deal revenue exceeds the block reward given up, the SP is <b>ahead of today</b>. Because block
             reward per TiB is small next to paid-storage rates, even a modest paid book more than offsets the split —
             the FIP's intended outcome: "SPs who serve clients recover [the loss] through deal payments; SPs who do not
@@ -780,12 +781,12 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
             <li>w1 shown as clean 5pp quarterly levels; the FIP ramp is continuous, so mid-quarter it sits between two levels.</li>
             <li>Deal revenue = capacity × rate, 100% paid and flat — a magnitude estimate, not a forecast of real contracts or utilisation.</li>
             <li>The "given up" baseline assumes the same power share pre- and post-Solstice; a committed-capacity-heavy SP's share actually <i>rises</i> as its sectors become 10× QAP, so the loss shown is conservative.</li>
-            <li>Block reward (50,000 FIL/day) and network power (2.2 EiB) are fixed references — update them as the network moves.</li>
+            <li>Block reward (50,000 FIL/day) is a fixed placeholder; network raw power is read from chain and refreshed weekly (with a ~1.27 EiB fallback if the read is unavailable).</li>
           </ul>
 
           <p class="disclaimer">Illustrative model for community insight, not financial advice. Source: FIP-0118
-            (Solstice), irenegia-solstice draft. This tool reads only public protocol parameters and a public FIL
-            price — no wallets, keys, or funds are involved.</p>
+            (Solstice), irenegia-solstice draft. This tool reads only public protocol parameters, a public FIL price,
+            and public on-chain network power — no wallets, keys, or funds are involved.</p>
         </div>
       </details>
 
@@ -805,7 +806,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
   const TiB_PER_PiB = 1024;
   const DAYS_PER_YEAR = 365;
   const BR_PER_DAY = 50000;         // fixed network block reward (FIP placeholder), not user-adjustable
-  const NET_POWER_EIB = 2.2;        // network raw byte power reference, ~2.2 EiB as of Aug 2026 — drifts monthly; refresh periodically (single source of truth for the value)
+  let NET_POWER = 1.27;             // network raw byte power (EiB); fallback ≈1.27 (QAP ~12.7 EiB ÷ 10). Auto-refreshed weekly from chain (see initNetPower)
 
   const $ = id => document.getElementById(id);
   const state = { revmode: "storage", capunit: "TiB", view: "orch" };
@@ -855,7 +856,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
     const rate   = +$("rate").value;                 // $/TiB/month
     const capRaw = +$("cap").value;
     const capTiB = state.capunit === "PiB" ? capRaw * TiB_PER_PiB : capRaw;
-    const netPowerEiB = NET_POWER_EIB;               // fixed network raw power (standard reference)
+    const netPowerEiB = NET_POWER;                   // network raw power (EiB), refreshed weekly from chain
     const paidPct = 1;                               // 100% of capacity assumed on paid deals
     // Q1 FPV base (orchestrator gate driver; orch view only)
     const fpvBase = (state.revmode === "direct" && $("fpv")) ? +$("fpv").value : rate * capTiB * 3;
@@ -1264,6 +1265,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
     if ($("v_norch")) $("v_norch").textContent = inp.nOrch;
     $("v_cap").textContent = (+$("cap").value).toLocaleString() + " " + state.capunit;
     $("v_rate").textContent = "$" + inp.rate.toFixed(2) + " /TiB/mo";
+    $("v_netpower").textContent = NET_POWER.toFixed(2) + " EiB";
     if (state.revmode === "direct" && $("v_fpv")) $("v_fpv").textContent = fmtUSDfull(+$("fpv").value);
     $("hero_q").textContent = "Q" + cur.q;
 
@@ -1449,6 +1451,47 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
         } catch (e) { /* try next source */ }
       }
       if (note){ note.style.color = "var(--ink-muted)"; note.textContent = `Live price unavailable here — using ~$${FALLBACK.toFixed(2)} snapshot. (Live fetch works on the hosted site.)`; }
+    })();
+  })();
+
+  // ---- weekly network raw power ----
+  // Reads TotalRawBytePower from the Storage Power Actor (f04) via the public GLIF RPC gateway.
+  // Cached in localStorage and refreshed at most once every 7 days. Works on a normal host
+  // (GitHub Pages); the Artifact sandbox blocks the request, so it keeps the ~1.27 EiB fallback.
+  (function initNetPower(){
+    const note = $("netpower_src");
+    const KEY = "sra_netpower_v1";
+    const WEEK = 7 * 24 * 3600 * 1000;
+    const EiB = Math.pow(1024, 6);
+    const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+    function apply(eib, label){ NET_POWER = eib; render(); if (note){ note.style.color = "var(--service)"; note.textContent = label; } }
+    // 1. use a fresh (<7d) cached value without hitting the network
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+    if (cached && cached.eib > 0 && (Date.now() - cached.ts) < WEEK){
+      apply(cached.eib, `≈ ${cached.eib.toFixed(2)} EiB raw · updated ${Math.round((Date.now()-cached.ts)/86400000)}d ago (weekly)`);
+      return;
+    }
+    // 2. otherwise refresh from chain
+    (async () => {
+      try {
+        const r = await withTimeout(fetch("https://api.node.glif.io/rpc/v1", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "Filecoin.StateReadState", params: ["f04", null] })
+        }), 7000);
+        if (r.ok){
+          const j = await r.json();
+          const raw = j && j.result && j.result.State && j.result.State.TotalRawBytePower;
+          const eib = raw ? Number(raw) / EiB : NaN;
+          if (isFinite(eib) && eib > 0){
+            try { localStorage.setItem(KEY, JSON.stringify({ eib, ts: Date.now() })); } catch (e) {}
+            apply(eib, `≈ ${eib.toFixed(2)} EiB raw · refreshed from chain (weekly)`);
+            return;
+          }
+        }
+      } catch (e) { /* fall through */ }
+      if (cached && cached.eib > 0){ apply(cached.eib, `≈ ${cached.eib.toFixed(2)} EiB raw · last known (refresh failed)`); return; }
+      if (note){ note.style.color = "var(--ink-muted)"; note.textContent = `Live power unavailable here — using ~${NET_POWER.toFixed(2)} EiB reference. (Live read works on the hosted site.)`; }
     })();
   })();
 })();
