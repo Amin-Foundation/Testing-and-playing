@@ -194,6 +194,19 @@
   .hstat .hv { font-size: 20px; font-weight: 680; letter-spacing: -.01em; font-variant-numeric: tabular-nums; line-height: 1; }
   .hstat .hv small { font-size: 12px; color: var(--ink-2); font-weight: 500; }
 
+  /* hero donut (revenue split) */
+  .hero-donut { display: flex; align-items: center; gap: 20px; flex: 0 1 auto; flex-wrap: wrap; }
+  .donut { width: 132px; height: 132px; flex: none; }
+  .donut circle { transition: stroke-dasharray .35s ease, stroke-dashoffset .35s ease; }
+  .donut-pct { font-family: var(--sans); font-weight: 680; font-size: 26px; letter-spacing: -.02em; fill: var(--ink); }
+  .donut-sub { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; fill: var(--ink-muted); }
+  .donut-legend { display: flex; flex-direction: column; gap: 9px; }
+  .donut-legend .dl-row { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-2); }
+  .donut-legend .dl-row .sw { width: 11px; height: 11px; border-radius: 3px; }
+  .donut-legend .dl-row b { font-family: var(--mono); font-weight: 680; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .donut-legend .dl-total { border-top: 1px solid var(--hair); padding-top: 8px; margin-top: 1px; }
+  .donut-legend .dl-total b { color: var(--ink); }
+
   /* SP net-position banner (the headline story) */
   .netbanner { display: flex; align-items: center; gap: 16px; padding: 15px 20px; border-radius: var(--r); border: 1px solid var(--hair); box-shadow: var(--shadow); font-size: 14px; color: var(--ink-2); flex-wrap: wrap; }
   .netbanner.pos { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 30%, var(--hair)); }
@@ -271,7 +284,7 @@
   .ttip {
     position: absolute; pointer-events: none; z-index: 5; background: var(--surface);
     border: 1px solid var(--hair-strong); border-radius: 9px; box-shadow: var(--shadow);
-    padding: 10px 12px; font-size: 12px; min-width: 140px; opacity: 0; transition: opacity .12s; transform: translate(-50%, -108%);
+    padding: 10px 12px; font-size: 12px; min-width: 140px; opacity: 0; transition: opacity .12s; transform: translate(-50%, 0);
   }
   .ttip .tt-h { font-family: var(--mono); font-weight: 680; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 7px; }
   .ttip .tt-r { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin: 3px 0; }
@@ -375,8 +388,9 @@
           <p class="hint">Fixed network constant — the total daily block reward minted network-wide (FIP worked-example placeholder, to verify against chain actuals). Not a lever the operating model changes.</p>
         </div>
         <div class="field">
-          <label>Network raw power <span class="val" id="v_netpower">2.2 EiB</span></label>
-          <p class="hint">Reference value — network raw byte power, <b>≈2.2 EiB as of Aug 2026</b>. It drifts month to month, so this is a periodic snapshot to refresh occasionally (not a live feed, and not a scenario lever). Your block-reward share = your capacity ÷ network power.</p>
+          <label>Network raw power <span class="val" id="v_netpower">1.27 EiB</span></label>
+          <p class="hint">Network raw byte power, read from chain (Storage Power Actor) and <b>auto-refreshed weekly</b> — not a scenario lever. Your block-reward share = your capacity ÷ network power.</p>
+          <p class="hint" id="netpower_src" style="margin-top:6px;color:var(--service);">Checking network power…</p>
         </div>
       </div>
 
@@ -451,10 +465,24 @@
           <div class="hero-fig"><span id="hero_filday">10,000</span><span class="hero-unit" id="hero_unit">FIL / day</span></div>
           <p class="hero-ctx" id="hero_ctx">your <b>100%</b> share of the <b>10,000 FIL/day</b> service stream (w2 = <b>20%</b> of the block reward)</p>
         </div>
-        <div class="hero-stats">
+        <div class="hero-stats" id="hero-stats">
           <div class="hstat"><span class="hl" id="hl_1">This quarter</span><span class="hv" id="hero_qtr">900K <small>FIL</small></span></div>
           <div class="hstat"><span class="hl" id="hl_2">Per year</span><span class="hv" id="hero_yr">3.65M <small>FIL</small></span></div>
           <div class="hstat"><span class="hl" id="hl_3">Per year (USD)</span><span class="hv" id="hero_usd">$3.65M</span></div>
+        </div>
+        <div class="hero-donut hidden" id="hero-donut">
+          <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Revenue split: block rewards vs client deals">
+            <circle cx="60" cy="60" r="46" fill="none" stroke="var(--surface-2)" stroke-width="15"></circle>
+            <circle id="donut_block" cx="60" cy="60" r="46" fill="none" stroke="var(--consensus)" stroke-width="15" stroke-dasharray="0 999" transform="rotate(-90 60 60)"></circle>
+            <circle id="donut_deal" cx="60" cy="60" r="46" fill="none" stroke="var(--service)" stroke-width="15" stroke-dasharray="0 999" stroke-dashoffset="0" transform="rotate(-90 60 60)"></circle>
+            <text id="donut_pct" x="60" y="57" text-anchor="middle" class="donut-pct">—</text>
+            <text x="60" y="74" text-anchor="middle" class="donut-sub">from deals</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="dl-row"><span class="sw" style="background:var(--consensus)"></span>Block rewards<b id="hd_block">—</b></div>
+            <div class="dl-row"><span class="sw" style="background:var(--service)"></span>Client deal revenue<b id="hd_deal">—</b></div>
+            <div class="dl-row dl-total"><span class="sw" style="background:transparent"></span>Per year<b id="hd_yr">—</b></div>
+          </div>
         </div>
       </section>
 
@@ -567,7 +595,7 @@
         <!-- SP SPLIT BAR: consensus vs non-consensus -->
         <section class="card">
           <div class="chead">
-            <h2>Block reward to Storage Providers — <span id="sp_split_q">Q2</span></h2>
+            <h2>Share of Block rewards to SP — <span id="sp_split_q">Q2</span></h2>
           </div>
           <p class="csub">SPs earn block rewards from the <b>consensus stream (w1)</b>, shared by QAP power. Solstice
             makes every sector 10× QAP uniformly, so an SP's cut tracks its raw-power share. As w1 ramps 95% → 50%,
@@ -699,7 +727,7 @@ this Orchestrator = service stream / number of Orchestrators</div>
           <h4>Fixed constants (not scenario levers)</h4>
           <ul>
             <li><b>Block reward</b> = 50,000 FIL/day network-wide (FIP worked-example placeholder).</li>
-            <li><b>Network raw power</b> = 2.2 EiB = 2.2 × 1,048,576 = 2,306,867 TiB (≈ level as of Aug 2026; 1 EiB = 1,048,576 TiB). A periodic reference — it drifts month to month and should be refreshed occasionally, but not every session.</li>
+            <li><b>Network raw power</b> ≈ 1.27 EiB = 1,331,691 TiB (1 EiB = 1,048,576 TiB). Read from chain (Storage Power Actor <code>f04</code>, <code>TotalRawBytePower</code>) and auto-refreshed weekly; ≈ QAP 12.7 EiB ÷ 10. The 1.27 EiB shown offline is the fallback.</li>
             <li><b>Quarter length</b> = 90 days; a year = 365 days.</li>
             <li><b>QAP</b>: every PoRep sector gets <b>10× QAP</b> uniformly (Fil+/DataCap retired). Uniform ⇒ it cancels in a power <i>share</i>, so we work in raw bytes.</li>
           </ul>
@@ -713,12 +741,12 @@ Q1 95% · Q2 90% · Q3 85% · Q4 80% · Q5 75% · … · Q9 55% · Q10+ 50%</div
 
           <h4>Step 2 — Your share of network power</h4>
           <div class="eq">power share = your capacity (TiB) ÷ network power (TiB)
-example: 500 ÷ 2,306,867 = 0.0002168  (0.0217%)</div>
+example: 500 ÷ 1,331,691 = 0.0003755  (0.0376%)</div>
 
           <h4>Step 3 — Block-reward income</h4>
           <div class="eq">block income (FIL/day) = w1(Q) · 50,000 · power share
-example Q2: 0.90 · 50,000 · 0.0002168 = 9.76 FIL/day
-block income (USD/day) = FIL/day · FIL price   → 9.76 · $1 = $9.76/day</div>
+example Q2: 0.90 · 50,000 · 0.0003755 = 16.9 FIL/day
+block income (USD/day) = FIL/day · FIL price   → 16.9 · $1 = $16.9/day</div>
 
           <h4>Step 4 — Client deal revenue</h4>
           <p>SPs don't receive service-stream payouts directly — they "recover this through deal payments" from clients
@@ -729,14 +757,14 @@ example: 500 · $5 · 12 ÷ 365 = $82.2/day</div>
 
           <h4>Step 5 — Total revenue (the hero figure)</h4>
           <div class="eq">total (USD/day) = block income + deal revenue
-example Q2: $9.76 + $82.2 = $91.9/day   (× 365 ≈ $33.6K/yr)</div>
+example Q2: $16.9 + $82.2 = $99.1/day   (× 365 ≈ $36.2K/yr)</div>
 
           <h4>Step 6 — Net vs. today (the green banner)</h4>
           <p>Pre-Solstice, SPs received 100% of block reward; Solstice diverts (1 − w1) of it to the service stream and
             burn. That reduction is what an SP "gives up." The net compares it against the new deal revenue:</p>
           <div class="eq">block reward given up = (1 − w1(Q)) · 50,000 · power share · FIL price
-example Q2: 0.10 · 50,000 · 0.0002168 · $1 = $1.08/day
-net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1/day</div>
+example Q2: 0.10 · 50,000 · 0.0003755 · $1 = $1.88/day
+net vs today = deal revenue − block reward given up = $82.2 − $1.88 = +$80.3/day</div>
           <p>Whenever deal revenue exceeds the block reward given up, the SP is <b>ahead of today</b>. Because block
             reward per TiB is small next to paid-storage rates, even a modest paid book more than offsets the split —
             the FIP's intended outcome: "SPs who serve clients recover [the loss] through deal payments; SPs who do not
@@ -753,12 +781,12 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
             <li>w1 shown as clean 5pp quarterly levels; the FIP ramp is continuous, so mid-quarter it sits between two levels.</li>
             <li>Deal revenue = capacity × rate, 100% paid and flat — a magnitude estimate, not a forecast of real contracts or utilisation.</li>
             <li>The "given up" baseline assumes the same power share pre- and post-Solstice; a committed-capacity-heavy SP's share actually <i>rises</i> as its sectors become 10× QAP, so the loss shown is conservative.</li>
-            <li>Block reward (50,000 FIL/day) and network power (2.2 EiB) are fixed references — update them as the network moves.</li>
+            <li>Block reward (50,000 FIL/day) is a fixed placeholder; network raw power is read from chain and refreshed weekly (with a ~1.27 EiB fallback if the read is unavailable).</li>
           </ul>
 
           <p class="disclaimer">Illustrative model for community insight, not financial advice. Source: FIP-0118
-            (Solstice), irenegia-solstice draft. This tool reads only public protocol parameters and a public FIL
-            price — no wallets, keys, or funds are involved.</p>
+            (Solstice), irenegia-solstice draft. This tool reads only public protocol parameters, a public FIL price,
+            and public on-chain network power — no wallets, keys, or funds are involved.</p>
         </div>
       </details>
 
@@ -778,7 +806,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
   const TiB_PER_PiB = 1024;
   const DAYS_PER_YEAR = 365;
   const BR_PER_DAY = 50000;         // fixed network block reward (FIP placeholder), not user-adjustable
-  const NET_POWER_EIB = 2.2;        // network raw byte power reference, ~2.2 EiB as of Aug 2026 — drifts monthly; refresh periodically (single source of truth for the value)
+  let NET_POWER = 1.27;             // network raw byte power (EiB); fallback ≈1.27 (QAP ~12.7 EiB ÷ 10). Auto-refreshed weekly from chain (see initNetPower)
 
   const $ = id => document.getElementById(id);
   const state = { revmode: "storage", capunit: "TiB", view: "orch" };
@@ -828,7 +856,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
     const rate   = +$("rate").value;                 // $/TiB/month
     const capRaw = +$("cap").value;
     const capTiB = state.capunit === "PiB" ? capRaw * TiB_PER_PiB : capRaw;
-    const netPowerEiB = NET_POWER_EIB;               // fixed network raw power (standard reference)
+    const netPowerEiB = NET_POWER;                   // network raw power (EiB), refreshed weekly from chain
     const paidPct = 1;                               // 100% of capacity assumed on paid deals
     // Q1 FPV base (orchestrator gate driver; orch view only)
     const fpvBase = (state.revmode === "direct" && $("fpv")) ? +$("fpv").value : rate * capTiB * 3;
@@ -980,8 +1008,12 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
       cross.setAttribute("x1", x); cross.setAttribute("x2", x); cross.setAttribute("stroke-opacity", .4);
       tip.innerHTML = html(rows[i]);
       tip.style.opacity = 1;
-      tip.style.left = (x / W * rect.width) + "px";
-      tip.style.top  = (M.t + PH * 0.15 / 1) / H * rect.height + "px";
+      // keep the tooltip inside the plot: hang it just below the top edge, clamp horizontally
+      const tw = tip.offsetWidth;
+      let left = x / W * rect.width;
+      left = Math.max(tw / 2 + 6, Math.min(rect.width - tw / 2 - 6, left));
+      tip.style.left = left + "px";
+      tip.style.top  = ((M.t / H) * rect.height + 6) + "px";
     }
     function leave(){ tip.style.opacity = 0; cross.setAttribute("stroke-opacity", 0); }
     svg.addEventListener("mousemove", move);
@@ -1191,7 +1223,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
       tag: "Solstice · Storage Provider Rewards",
       h1: "What could Storage Providers earn under Solstice?",
       lede: `Solstice pays <b>Storage Providers</b> through two channels: a <b>share of block rewards</b> (the consensus stream w1, 95% → 50%) and an <b>increasing client deal revenue share</b>. Set a scenario to see how an SP's revenue shifts from block rewards to client demand.`,
-      op: `Every sector gets <b>10× QAP</b> uniformly (Fil+ is retired), so all PoRep power is equal at L1. An SP's direct block-reward income falls by the non-consensus share (1 − w1); those who serve paying clients <b>recover it through deal revenue</b> — those who don't see a permanent reduction, by design.`,
+      op: `Every sector gets <b>10× QAP</b> uniformly, so all PoRep power is equal at L1. An SP's direct block-reward income falls by the non-consensus share (1 − w1); those who serve paying clients <b>recover it through deal revenue</b> — those who don't see a permanent reduction, by design.`,
       who: "Your Storage Provider earns"
     }
   };
@@ -1233,6 +1265,7 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
     if ($("v_norch")) $("v_norch").textContent = inp.nOrch;
     $("v_cap").textContent = (+$("cap").value).toLocaleString() + " " + state.capunit;
     $("v_rate").textContent = "$" + inp.rate.toFixed(2) + " /TiB/mo";
+    $("v_netpower").textContent = NET_POWER.toFixed(2) + " EiB";
     if (state.revmode === "direct" && $("v_fpv")) $("v_fpv").textContent = fmtUSDfull(+$("fpv").value);
     $("hero_q").textContent = "Q" + cur.q;
 
@@ -1242,6 +1275,8 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
 
   function renderOrch(rows, cur, inp){
     $("split_q").textContent = "Q" + cur.q;
+    $("hero-stats").classList.remove("hidden");
+    $("hero-donut").classList.add("hidden");
     $("hero_unit").textContent = "FIL / day";
     const actorQtrFil = cur.actorFil * 90, actorYrFil = cur.actorFil * DAYS_PER_YEAR;
     $("hero_filday").textContent = fmtFIL(cur.actorFil);
@@ -1278,6 +1313,19 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
     $("hl_2").textContent = "Deal revenue";  $("hero_yr").innerHTML  = fmtUSD(sc.dealUsd) + ' <small>/day</small>';
     $("hl_3").textContent = "Per year";      $("hero_usd").textContent = fmtUSD(sc.totUsd * DAYS_PER_YEAR);
     $("hero_ctx").innerHTML = `<b>${fmtPct(blockPct)}</b> from block rewards (consensus w1 = <b>${pctNum(sc.wCons)}%</b> × your <b>${fmtFIL(sc.blockFil)} FIL/day</b> cut) and <b>${fmtPct(1-blockPct)}</b> from paid client deals. Block-reward income steps down as w1 falls 95% → 50%; steady client deal revenue carries the rest. USD at $${inp.price.toFixed(2)}/FIL.`;
+    // revenue-split donut (block rewards vs client deals)
+    $("hero-stats").classList.add("hidden");
+    $("hero-donut").classList.remove("hidden");
+    const C = 2 * Math.PI * 46;
+    const bf = sc.totUsd > 0 ? sc.blockUsd / sc.totUsd : 0;
+    const df = sc.totUsd > 0 ? sc.dealUsd / sc.totUsd : 1;
+    $("donut_block").setAttribute("stroke-dasharray", `${(bf*C).toFixed(2)} ${C.toFixed(2)}`);
+    $("donut_deal").setAttribute("stroke-dasharray", `${(df*C).toFixed(2)} ${C.toFixed(2)}`);
+    $("donut_deal").setAttribute("stroke-dashoffset", `${(-bf*C).toFixed(2)}`);
+    $("donut_pct").textContent = Math.round(df*100) + "%";
+    $("hd_block").textContent = fmtUSD(sc.blockUsd) + "/d";
+    $("hd_deal").textContent = fmtUSD(sc.dealUsd) + "/d";
+    $("hd_yr").textContent = fmtUSD(sc.totUsd * DAYS_PER_YEAR);
     $("kpi1").style.setProperty('--kc','var(--consensus)'); $("kpi2").style.setProperty('--kc','var(--consensus)'); $("kpi3").style.setProperty('--kc','var(--service)');
     $("k_w1lab").textContent = "Consensus weight w1";
     $("k_w1").innerHTML = pctNum(sc.wCons) + '<span class="kunit">%</span>';
@@ -1403,6 +1451,47 @@ net vs today = deal revenue − block reward given up = $82.2 − $1.08 = +$81.1
         } catch (e) { /* try next source */ }
       }
       if (note){ note.style.color = "var(--ink-muted)"; note.textContent = `Live price unavailable here — using ~$${FALLBACK.toFixed(2)} snapshot. (Live fetch works on the hosted site.)`; }
+    })();
+  })();
+
+  // ---- weekly network raw power ----
+  // Reads TotalRawBytePower from the Storage Power Actor (f04) via the public GLIF RPC gateway.
+  // Cached in localStorage and refreshed at most once every 7 days. Works on a normal host
+  // (GitHub Pages); the Artifact sandbox blocks the request, so it keeps the ~1.27 EiB fallback.
+  (function initNetPower(){
+    const note = $("netpower_src");
+    const KEY = "sra_netpower_v1";
+    const WEEK = 7 * 24 * 3600 * 1000;
+    const EiB = Math.pow(1024, 6);
+    const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+    function apply(eib, label){ NET_POWER = eib; render(); if (note){ note.style.color = "var(--service)"; note.textContent = label; } }
+    // 1. use a fresh (<7d) cached value without hitting the network
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+    if (cached && cached.eib > 0 && (Date.now() - cached.ts) < WEEK){
+      apply(cached.eib, `≈ ${cached.eib.toFixed(2)} EiB raw · updated ${Math.round((Date.now()-cached.ts)/86400000)}d ago (weekly)`);
+      return;
+    }
+    // 2. otherwise refresh from chain
+    (async () => {
+      try {
+        const r = await withTimeout(fetch("https://api.node.glif.io/rpc/v1", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "Filecoin.StateReadState", params: ["f04", null] })
+        }), 7000);
+        if (r.ok){
+          const j = await r.json();
+          const raw = j && j.result && j.result.State && j.result.State.TotalRawBytePower;
+          const eib = raw ? Number(raw) / EiB : NaN;
+          if (isFinite(eib) && eib > 0){
+            try { localStorage.setItem(KEY, JSON.stringify({ eib, ts: Date.now() })); } catch (e) {}
+            apply(eib, `≈ ${eib.toFixed(2)} EiB raw · refreshed from chain (weekly)`);
+            return;
+          }
+        }
+      } catch (e) { /* fall through */ }
+      if (cached && cached.eib > 0){ apply(cached.eib, `≈ ${cached.eib.toFixed(2)} EiB raw · last known (refresh failed)`); return; }
+      if (note){ note.style.color = "var(--ink-muted)"; note.textContent = `Live power unavailable here — using ~${NET_POWER.toFixed(2)} EiB reference. (Live read works on the hosted site.)`; }
     })();
   })();
 })();
